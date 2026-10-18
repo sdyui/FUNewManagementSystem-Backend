@@ -2,15 +2,12 @@ package com.funewmanagementsystem.controller;
 
 import com.funewmanagementsystem.dto.request.CreateAccountRequest;
 import com.funewmanagementsystem.dto.request.SystemAccountRequest;
+import com.funewmanagementsystem.dto.respone.PageResponse;
 import com.funewmanagementsystem.dto.respone.SystemAccountResponse;
-import com.funewmanagementsystem.entity.SystemAccount;
 import com.funewmanagementsystem.exception.ErrorResponse;
-import com.funewmanagementsystem.exception.ResourceNotFoundException;
-import com.funewmanagementsystem.repository.SystemAccountRepository;
 import com.funewmanagementsystem.service.SystemAccountService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -18,30 +15,50 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Optional;
-
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
 public class SystemAccountController {
-    private SystemAccountResponse toResponse(SystemAccount a) {
-        SystemAccountResponse res = new SystemAccountResponse();
-        res.setAccountId(a.getId());
-        res.setAccountName(a.getAccountName());
-        res.setAccountRole(a.getAccountRole());
-        return res;
-    }
     private static final String USER_EXAMPLE = """
             {
               "accountId": 1,
               "accountName": "admin",
               "accountRole": "ADMIN"
+            }""";
+    private static final String PAGE_EXAMPLE = """
+            {
+              "content": [""" + USER_EXAMPLE + """
+            ],
+              "page": 0,
+              "size": 10,
+              "totalElements": 1,
+              "totalPages": 1,
+              "last": true
+            }""";
+    private static final String BAD_SORT_EXAMPLE = """
+            {
+              "timestamp": "2026-10-17T22:30:00",
+              "status": 400,
+              "error": "Bad Request",
+              "message": "Cannot sort by 'accountPassword'. Allowed: [id, accountName, accountEmail, accountRole]",
+              "path": "/api/v1/account"
+            }""";
+    private static final String DELETE_CONFLICT_EXAMPLE = """
+            {
+              "timestamp": "2026-10-17T22:30:00",
+              "status": 409,
+              "error": "Conflict",
+              "message": "Operation conflicts with existing data",
+              "path": "/api/v1/account/1"
             }""";
     private static final String LOGIN_REQUEST_EXAMPLE = """
             {
@@ -108,7 +125,6 @@ public class SystemAccountController {
               "path": "/api/v1/account"
             }""";
     private final SystemAccountService systemAccountService;
-    private final SystemAccountRepository systemAccountRepository;
     @Operation(
             summary = "Login",
             description = "Authenticate a user using account name and password.",
@@ -130,28 +146,38 @@ public class SystemAccountController {
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = @ExampleObject(name = "unauthorized", value = LOGIN_UNAUTHORIZED_EXAMPLE)))
     })
+
+
+
     @PostMapping("/auth/login")
     public ResponseEntity<SystemAccountResponse> login(@Valid @RequestBody SystemAccountRequest systemAccountRequest){
         SystemAccountResponse systemAccountResponse = systemAccountService.login(systemAccountRequest);
         return ResponseEntity.ok(systemAccountResponse);
     }
     @Operation(
-            summary = "Get all accounts",
-            description = "Returns every account stored in the database. Returns 204 No Content when there are no accounts.")
+            summary = "Search accounts",
+            description = "Returns a page of accounts, optionally filtered by name and email (partial, case-insensitive). "
+                    + "Sort with sort=field,asc|desc; allowed fields: id, accountName, accountEmail, accountRole.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "List of accounts",
+            @ApiResponse(responseCode = "200", description = "Page of accounts (content is empty when nothing matches)",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            array = @ArraySchema(schema = @Schema(implementation = SystemAccountResponse.class)),
-                            examples = @ExampleObject(name = "accounts", value = "[" + USER_EXAMPLE + "]"))),
-            @ApiResponse(responseCode = "204", description = "No accounts exist", content = @Content)
+                            schema = @Schema(implementation = PageResponse.class),
+                            examples = @ExampleObject(name = "page", value = PAGE_EXAMPLE))),
+            @ApiResponse(responseCode = "400", description = "Invalid sort field",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(name = "badSort", value = BAD_SORT_EXAMPLE)))
     })
     @GetMapping("/account")
-    public ResponseEntity<List<SystemAccountResponse>> fetchAllAccount(){
-        List<SystemAccountResponse> accounts = systemAccountRepository.findAll().stream().map(this::toResponse).toList();
-        if(accounts.isEmpty()){
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.ok(accounts);
+    public ResponseEntity<PageResponse<SystemAccountResponse>> fetchAllAccount(
+            @Parameter(description = "Part of account name", example = "adm")
+            @RequestParam(required = false) String name,
+            @Parameter(description = "Part of email", example = "gmail")
+            @RequestParam(required = false) String email,
+            @ParameterObject
+            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
+
+        return ResponseEntity.ok(systemAccountService.searchAccounts(name, email, pageable));
     }
     @Operation(
             summary = "Get an account by id",
@@ -168,12 +194,9 @@ public class SystemAccountController {
     })
 
     @GetMapping("/account/{id}")
-    public ResponseEntity<?> fetchAccountById(@Parameter(description = "Id of the account to retrieve", example = "1", required = true)
+    public ResponseEntity<SystemAccountResponse> fetchAccountById(@Parameter(description = "Id of the account to retrieve", example = "1", required = true)
                                               @PathVariable long id){
-        SystemAccountResponse account = systemAccountRepository.findById(id)
-                .map(this::toResponse)
-                .orElseThrow(() -> new ResourceNotFoundException("Account with id " + id + " not found"));
-        return ResponseEntity.ok(account);
+        return ResponseEntity.ok(systemAccountService.getAccountById(id));
     }
     @Operation(
             summary = "Create a new account",
@@ -202,17 +225,28 @@ public class SystemAccountController {
         SystemAccountResponse created = systemAccountService.createAccount(createAccountRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
+    @Operation(
+            summary = "Delete an account",
+            description = "Deletes the account with the given id. Fails with 409 if the account still owns news articles.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Account deleted", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Account not found",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(name = "notFound", value = NOT_FOUND_EXAMPLE))),
+            @ApiResponse(responseCode = "409", description = "Account is still referenced by news articles",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(name = "conflict", value = DELETE_CONFLICT_EXAMPLE)))
+    })
     @DeleteMapping("/account/{id}")
-    public ResponseEntity<?> deleteAccount(@Parameter(description = "Id of the account to delete",example = "1", required = true)
+    public ResponseEntity<Void> deleteAccount(@Parameter(description = "Id of the account to delete",example = "1", required = true)
                                            @PathVariable long id
                                            ){
-        Optional<SystemAccount> account = systemAccountRepository.findById(id);
-        if(!account.isPresent()){
-            throw new ResourceNotFoundException("Account with id " + id + " not found");
-        }
-        systemAccountRepository.deleteById(id);
-        return new ResponseEntity<>("Account with id " + id + " deleted", HttpStatus.OK);
+        systemAccountService.deleteAccount(id);
+        return ResponseEntity.noContent().build();
     }
+
 
 
 

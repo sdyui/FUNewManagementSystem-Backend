@@ -1,7 +1,6 @@
 package com.funewmanagementsystem.dto.respone;
 
 import com.funewmanagementsystem.entity.AccountRole;
-import com.funewmanagementsystem.entity.SystemAccount;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

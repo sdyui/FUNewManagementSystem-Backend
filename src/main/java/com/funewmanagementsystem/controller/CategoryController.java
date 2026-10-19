@@ -19,115 +19,87 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/categories")
 @RequiredArgsConstructor
-@Tag(name = "Category Management", description = "APIs for managing news categories")
+@Tag(name = "Category Management", description = "Các API quản lý chuyên mục tin tức")
 public class CategoryController {
 
     private final CategoryService categoryService;
 
-    @Operation(summary = "Search categories",
-            description = "Returns a paginated list of categories, optionally filtered by name and isActive. "
-                    + "Sort with sort=field,asc|desc; allowed fields: id, categoryName, isActive.")
+    @Operation(summary = "Tạo mới chuyên mục", description = "Tạo một chuyên mục tin tức mới. Tên chuyên mục không được trùng.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Page of categories",
-                    content = @Content(schema = @Schema(implementation = PageResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid sort field",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    })
-    @GetMapping({"/category", "/categories"})
-    public ResponseEntity<PageResponse<CategoryResponse>> searchCategories(
-            @Parameter(description = "Part of category name", example = "Tin tức")
-            @RequestParam(required = false) String name,
-            @Parameter(description = "Filter by active status (true/false)")
-            @RequestParam(required = false) Boolean isActive,
-            @ParameterObject
-            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
-        return ResponseEntity.ok(categoryService.searchCategories(name, isActive, pageable));
-    }
-
-    @Operation(summary = "Get all active categories",
-            description = "Returns all active categories as a list (non-paginated) for dropdown selection in UI.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "List of active categories")
-    })
-    @GetMapping({"/category/active", "/categories/active"})
-    public ResponseEntity<List<CategoryResponse>> getAllActiveCategories() {
-        return ResponseEntity.ok(categoryService.getAllActiveCategories());
-    }
-
-    @Operation(summary = "Get category by id", description = "Returns the category with the given id.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Category found",
+            @ApiResponse(responseCode = "201", description = "Tạo thành công",
                     content = @Content(schema = @Schema(implementation = CategoryResponse.class))),
-            @ApiResponse(responseCode = "404", description = "Category not found",
+            @ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Tên chuyên mục đã tồn tại",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    @GetMapping({"/category/{id}", "/categories/{id}"})
-    public ResponseEntity<CategoryResponse> getCategoryById(
-            @Parameter(description = "Id of the category to retrieve", example = "1", required = true)
-            @PathVariable Long id) {
-        return ResponseEntity.ok(categoryService.getCategoryById(id));
-    }
-
-    @Operation(summary = "Create a new category", description = "Creates a new category. Category name must be unique.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Category created successfully",
-                    content = @Content(schema = @Schema(implementation = CategoryResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Validation failed",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "404", description = "Parent category not found",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "409", description = "Category name already exists",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    })
-    @PostMapping({"/category", "/categories"})
-    public ResponseEntity<CategoryResponse> createCategory(
-            @Valid @RequestBody CategoryRequest request) {
+    @PostMapping
+    public ResponseEntity<CategoryResponse> createCategory(@Valid @RequestBody CategoryRequest request) {
         CategoryResponse response = categoryService.createCategory(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @Operation(summary = "Update a category", description = "Updates an existing category by id.")
+    @Operation(summary = "Tìm kiếm & Phân trang chuyên mục", description = "Lấy danh sách chuyên mục có phân trang, hỗ trợ tìm theo tên và lọc theo trạng thái isActive.")
+    @GetMapping
+    public ResponseEntity<PageResponse<CategoryResponse>> searchCategories(
+            @Parameter(description = "Tìm kiếm theo tên chuyên mục", example = "Công nghệ")
+            @RequestParam(required = false) String name,
+            @Parameter(description = "Lọc theo trạng thái hoạt động (true/false)")
+            @RequestParam(required = false) Boolean isActive,
+            @ParameterObject
+            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
+
+        return ResponseEntity.ok(categoryService.searchCategories(name, isActive, pageable));
+    }
+
+    @Operation(summary = "Lấy danh sách tất cả chuyên mục đang hoạt động", description = "Dùng cho dropdown lựa chọn danh mục cha hoặc chọn danh mục khi đăng bài viết (không phân trang).")
+    @GetMapping("/active")
+    public ResponseEntity<List<CategoryResponse>> getAllActiveCategories() {
+        return ResponseEntity.ok(categoryService.getAllActiveCategories());
+    }
+
+    @Operation(summary = "Lấy chi tiết chuyên mục theo ID")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Category updated successfully",
-                    content = @Content(schema = @Schema(implementation = CategoryResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Validation failed or category selected as its own parent",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "404", description = "Category or parent category not found",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "409", description = "Category name already in use by another category",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            @ApiResponse(responseCode = "200", description = "Tìm thấy chuyên mục"),
+            @ApiResponse(responseCode = "404", description = "Không tìm thấy chuyên mục")
     })
-    @PutMapping({"/category/{id}", "/categories/{id}"})
+    @GetMapping("/{id}")
+    public ResponseEntity<CategoryResponse> getCategoryById(@PathVariable Long id) {
+        return ResponseEntity.ok(categoryService.getCategoryById(id));
+    }
+
+    @Operation(summary = "Cập nhật chuyên mục", description = "Cập nhật thông tin chuyên mục theo ID.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Cập nhật thành công"),
+            @ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ hoặc chọn chính nó làm cha"),
+            @ApiResponse(responseCode = "404", description = "Không tìm thấy chuyên mục"),
+            @ApiResponse(responseCode = "409", description = "Tên chuyên mục bị trùng với chuyên mục khác")
+    })
+    @PutMapping("/{id}")
     public ResponseEntity<CategoryResponse> updateCategory(
-            @Parameter(description = "Id of the category to update", example = "1", required = true)
             @PathVariable Long id,
             @Valid @RequestBody CategoryRequest request) {
         return ResponseEntity.ok(categoryService.updateCategory(id, request));
     }
 
-    @Operation(summary = "Delete a category",
-            description = "Deletes a category by id. Fails with 400 if it has child categories, or 409 if it is used by news articles.")
+    @Operation(summary = "Xóa chuyên mục", description = "Xóa chuyên mục theo ID. Sẽ thất bại nếu đang có chuyên mục con hoặc đang có bài viết tham chiếu tới.")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Category deleted successfully"),
-            @ApiResponse(responseCode = "400", description = "Cannot delete category with child categories",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "404", description = "Category not found",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "409", description = "Category is in use by news articles",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            @ApiResponse(responseCode = "204", description = "Xóa thành công"),
+            @ApiResponse(responseCode = "400", description = "Chuyên mục đang có chuyên mục con"),
+            @ApiResponse(responseCode = "404", description = "Không tìm thấy chuyên mục"),
+            @ApiResponse(responseCode = "409", description = "Chuyên mục đang được sử dụng trong bài viết")
     })
-    @DeleteMapping({"/category/{id}", "/categories/{id}"})
-    public ResponseEntity<Void> deleteCategory(
-            @Parameter(description = "Id of the category to delete", example = "1", required = true)
-            @PathVariable Long id) {
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
         categoryService.deleteCategory(id);
         return ResponseEntity.noContent().build();
     }

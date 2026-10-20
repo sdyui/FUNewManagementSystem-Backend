@@ -1,4 +1,5 @@
 package com.funewmanagementsystem.entity;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -28,5 +29,5 @@ public class Category {
     private Category parentCategory;
 
     @Column(name = "IsActive")
-    private Boolean isActive; //1 = active, 0 = inactive
+    private Boolean isActive; // 1 = active, 0 = inactive
 }

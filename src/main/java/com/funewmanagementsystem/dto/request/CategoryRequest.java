@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CategoryRequest {
+
     @NotBlank(message = "Tên chuyên mục không được để trống")
     @Size(max = 100, message = "Tên chuyên mục tối đa 100 ký tự")
     private String categoryName;

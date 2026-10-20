@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class SystemAccountController {
     private static final String USER_EXAMPLE = """
             {

@@ -17,10 +17,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-@Slf4j
+
 @Service
 @RequiredArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
@@ -33,8 +34,9 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional
     public CategoryResponse createCategory(CategoryRequest request){
         if(categoryRepository.existsByCategoryNameIgnoreCase(request.getCategoryName().trim())){
-            throw new DuplicateResourceException("Chuyên mục '" + request.getCategoryName() + "' đã tồn tại");
+            throw new DuplicateResourceException("Category already exists");
         }
+
 
         Category category = new Category();
         category.setCategoryName(request.getCategoryName().trim());
@@ -113,10 +115,16 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional(readOnly = true)
     public List<CategoryResponse> getAllActiveCategories() {
-        return categoryRepository.findByIsActiveTrue()
-                .stream()
-                .map(this::mapToResponse)
-                .toList();
+        List<Category> categories = categoryRepository.findByIsActiveTrue();
+
+        List<CategoryResponse> responses = new ArrayList<>();
+
+        for (Category category : categories) {
+            CategoryResponse response = mapToResponse(category);
+            responses.add(response);
+        }
+
+        return responses;
     }
 
 

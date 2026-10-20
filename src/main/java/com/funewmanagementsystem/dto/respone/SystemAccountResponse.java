@@ -12,6 +12,7 @@ public class SystemAccountResponse {
 
     private Long accountId;
     private String accountName;
+    private String email;
     private AccountRole accountRole;
 
 

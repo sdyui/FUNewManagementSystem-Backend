@@ -1,10 +1,14 @@
 package com.funewmanagementsystem.controller;
 
+import com.fasterxml.jackson.databind.util.BeanUtil;
 import com.funewmanagementsystem.dto.request.CreateAccountRequest;
 import com.funewmanagementsystem.dto.request.SystemAccountRequest;
+import com.funewmanagementsystem.dto.request.UpdateAccount;
 import com.funewmanagementsystem.dto.respone.PageResponse;
 import com.funewmanagementsystem.dto.respone.SystemAccountResponse;
+import com.funewmanagementsystem.entity.SystemAccount;
 import com.funewmanagementsystem.exception.ErrorResponse;
+import com.funewmanagementsystem.exception.ResourceNotFoundException;
 import com.funewmanagementsystem.service.SystemAccountService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -16,6 +20,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -32,6 +37,7 @@ public class SystemAccountController {
             {
               "accountId": 1,
               "accountName": "admin",
+              "accountEmail": "admin@gmai.com",
               "accountRole": "ADMIN"
             }""";
     private static final String PAGE_EXAMPLE = """
@@ -125,6 +131,8 @@ public class SystemAccountController {
               "path": "/api/v1/account"
             }""";
     private final SystemAccountService systemAccountService;
+
+
     @Operation(
             summary = "Login",
             description = "Authenticate a user using account name and password.",
@@ -246,6 +254,12 @@ public class SystemAccountController {
         systemAccountService.deleteAccount(id);
         return ResponseEntity.noContent().build();
     }
+    @PutMapping("/account/{id}")
+    public ResponseEntity<?>updateSystemAccount(@PathVariable Long id,
+                                                 @Valid @RequestBody UpdateAccount updateAccount){
+        return ResponseEntity.ok(systemAccountService.save(id,updateAccount));
+    }
+
 
 
 

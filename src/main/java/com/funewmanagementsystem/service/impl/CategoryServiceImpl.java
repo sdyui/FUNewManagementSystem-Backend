@@ -45,7 +45,7 @@ public class CategoryServiceImpl implements CategoryService {
 
         if (request.getParentCategoryId() != null) {
             Category parent = categoryRepository.findById(request.getParentCategoryId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục cha với id: " + request.getParentCategoryId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Parent category not found with id: " + request.getParentCategoryId()));
             category.setParentCategory(parent);
         }
 
@@ -57,19 +57,19 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional
     public CategoryResponse updateCategory(Long id, CategoryRequest request){
         Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyên mục với ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
 
-        // Kiểm tra trùng tên với chuyên mục khác khi update
+        // Check if category name already exists for another category
         if (categoryRepository.existsByCategoryNameIgnoreCaseAndIdNot(request.getCategoryName().trim(), id)) {
-            throw new DuplicateResourceException("Tên chuyên mục '" + request.getCategoryName() + "' đã được sử dụng!");
+            throw new DuplicateResourceException("Category name '" + request.getCategoryName() + "' is already in use!");
         }
 
         if (request.getParentCategoryId() != null) {
             if (request.getParentCategoryId().equals(id)) {
-                throw new InvalidRequestException("Một chuyên mục không thể chọn chính nó làm danh mục cha");
+                throw new InvalidRequestException("A category cannot be its own parent");
             }
             Category parent = categoryRepository.findById(request.getParentCategoryId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục cha với id: " + request.getParentCategoryId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Parent category not found with id: " + request.getParentCategoryId()));
             category.setParentCategory(parent);
         } else {
             category.setParentCategory(null);
@@ -90,7 +90,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional(readOnly = true)
     public CategoryResponse getCategoryById(Long id) {
         Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyên mục với ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
         return mapToResponse(category);
     }
 
@@ -100,7 +100,7 @@ public class CategoryServiceImpl implements CategoryService {
     public PageResponse<CategoryResponse> searchCategories(String name, Boolean isActive, Pageable pageable) {
         for (Sort.Order order : pageable.getSort()) {
             if (!SORTABLE_FIELDS.contains(order.getProperty())) {
-                throw new InvalidRequestException("Không thể sắp xếp theo '" + order.getProperty() + "'. Các trường cho phép: " + SORTABLE_FIELDS);
+                throw new InvalidRequestException("Cannot sort by '" + order.getProperty() + "'. Allowed fields: " + SORTABLE_FIELDS);
             }
         }
 
@@ -132,12 +132,12 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional
     public void deleteCategory(Long id) {
         if (!categoryRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Không tìm thấy chuyên mục với ID: " + id);
+            throw new ResourceNotFoundException("Category not found with id: " + id);
         }
 
 
         if (categoryRepository.existsByParentCategory_Id(id)) {
-            throw new InvalidRequestException("Không thể xóa chuyên mục này vì đang có các chuyên mục con trực thuộc!");
+            throw new InvalidRequestException("Cannot delete this category because it has sub-categories!");
         }
 
 

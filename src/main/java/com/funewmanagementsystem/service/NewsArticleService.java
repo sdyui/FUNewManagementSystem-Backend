@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 
 public interface NewsArticleService {
     NewsArticle getById(long id);
+    NewsArticleResponse getNewsById(Long id);
     NewsArticleResponse createNewsArticle(UpdateNewsArticleRequest newsArticleRequest);
 
     @Transactional

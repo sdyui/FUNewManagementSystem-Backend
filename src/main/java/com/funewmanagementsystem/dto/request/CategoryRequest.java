@@ -11,11 +11,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CategoryRequest {
 
-    @NotBlank(message = "Tên chuyên mục không được để trống")
-    @Size(max = 100, message = "Tên chuyên mục tối đa 100 ký tự")
+    @NotBlank(message = "Category name cannot be empty")
+    @Size(max = 100, message = "Category name must be at most 100 characters")
     private String categoryName;
 
-    @Size(max = 1000, message = "Mô tả tối đa 1000 ký tự")
+    @Size(max = 1000, message = "Description must be at most 1000 characters")
     private String categoryDescription;
 
     private Long parentCategoryId;

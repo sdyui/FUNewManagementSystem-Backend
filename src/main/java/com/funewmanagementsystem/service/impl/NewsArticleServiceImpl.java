@@ -32,7 +32,7 @@ public class NewsArticleServiceImpl implements NewsArticleService {
     private final CategoryRepository categoryRepository;
     private final SystemAccountRepository systemAccountRepository;
     private final TagRepository tagRepository;
-    private static final Set<String> SORTABLE_FIELDS = Set.of("id","newTilte","createdDate","modifiedDate","newsStatus");
+    private static final Set<String> SORTABLE_FIELDS = Set.of("id", "newsTitle", "newTilte", "createdDate", "modifiedDate", "newsStatus");
     private NewsArticleResponse toResponse(NewsArticle n) {
         return new NewsArticleResponse(
                 n.getId(),
@@ -51,6 +51,13 @@ public class NewsArticleServiceImpl implements NewsArticleService {
     @Override
     public NewsArticle getById(long id) {
         return newsArticleRepository.findById(id).orElseThrow(()->new ResourceNotFoundException("Not found news article with id:"+id));
+    }
+
+    @Override
+    public NewsArticleResponse getNewsById(Long id) {
+        NewsArticle newsArticle = newsArticleRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Not found news article with id: " + id));
+        return toResponse(newsArticle);
     }
 
     @Transactional

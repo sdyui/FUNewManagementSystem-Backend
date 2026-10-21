@@ -1,8 +1,8 @@
--- Sử dụng database
+-- Select database
 USE SBA_ASSIGNMENT;
 GO
 
--- 1. Chèn tài khoản Admin (chỉ chèn nếu chưa tồn tại, tránh lỗi trùng lặp UNIQUE KEY)
+-- 1. Insert Default Admin Account (only if it does not exist)
 IF NOT EXISTS (SELECT 1 FROM system_account WHERE account_name = 'admin')
 BEGIN
     INSERT INTO system_account (
@@ -21,43 +21,130 @@ END
 GO
 
 -- =========================================================================
--- DỮ LIỆU TEST DEMO CHO PHẦN CATEGORY (QUẢN LÝ CHUYÊN MỤC)
+-- RESET & SEED DATA IN ENGLISH
 -- =========================================================================
 
--- Xóa dữ liệu cũ nếu muốn reset lại từ đầu
+-- Clear dependent tables first to avoid foreign key conflicts
+DELETE FROM news_tag;
+DELETE FROM news_article;
+DELETE FROM tag;
 DELETE FROM category;
 GO
 
--- Bật tính năng chèn ID trực tiếp để cố định mối quan hệ Cha - Con chính xác 100%
+-- =========================================================================
+-- CATEGORIES (Parent - Child Hierarchical Structure)
+-- =========================================================================
+
 SET IDENTITY_INSERT category ON;
 GO
 
--- 2. Chèn toàn bộ danh mục Cha và Con
 INSERT INTO category (categoryid, category_name, category_description, is_active, parent_categoryid) VALUES
--- Danh mục cha gốc (IDs 1 -> 5, parent_categoryid = NULL)
-(1, N'Tin tức học đường', N'Các tin tức, thông báo và sự kiện diễn ra tại trường đại học', 1, NULL),
-(2, N'Đào tạo & Tuyển sinh', N'Thông tin chương trình đào tạo, quy chế học vụ và tuyển sinh các hệ', 1, NULL),
-(3, N'Hoạt động sinh viên', N'Các phong trào đoàn hội, hoạt động ngoại khóa và câu lạc bộ sinh viên', 1, NULL),
-(4, N'Công nghệ & Sáng tạo', N'Tin tức về công nghệ, lập trình, trí tuệ nhân tạo và nghiên cứu khoa học', 1, NULL),
-(5, N'Lưu trữ cũ (Tạm ngưng)', N'Danh mục cũ tạm thời không còn hoạt động (dùng để test lọc Inactive)', 0, NULL),
+-- Root Parent Categories (IDs 1 -> 5, parent_categoryid = NULL)
+(1, N'Campus News', N'University news, official announcements, and campus events', 1, NULL),
+(2, N'Academics & Admissions', N'Curriculum, academic policies, degree programs, and admissions', 1, NULL),
+(3, N'Student Life & Activities', N'Student union campaigns, extracurricular activities, and student clubs', 1, NULL),
+(4, N'Technology & Innovation', N'Tech news, software development, artificial intelligence, and research', 1, NULL),
+(5, N'Archived (Inactive)', N'Outdated categories no longer in use (for testing inactive filter)', 0, NULL),
 
--- Danh mục con thuộc ID = 1 (Tin tức học đường)
-(6, N'Lịch thi & Đăng ký môn', N'Thông báo về lịch thi học kỳ và thời gian mở đăng ký tín chỉ', 1, 1),
-(7, N'Học bổng & Khen thưởng', N'Thông tin các suất học bổng khuyến học, tài trợ và khen thưởng sinh viên giỏi', 1, 1),
+-- Sub-categories under ID = 1 (Campus News)
+(6, N'Exams & Course Registration', N'Announcements regarding exam schedules and semester course registrations', 1, 1),
+(7, N'Scholarships & Awards', N'Information on merit-based scholarships, financial aid, and awards', 1, 1),
 
--- Danh mục con thuộc ID = 2 (Đào tạo & Tuyển sinh)
-(8, N'Tuyển sinh Đại học', N'Thông tin đề án tuyển sinh, các phương thức xét tuyển và chỉ tiêu tuyển sinh', 1, 2),
-(9, N'Trao đổi & Liên kết quốc tế', N'Các chương trình du học chuyển tiếp và học kỳ trao đổi sinh viên nước ngoài', 1, 2),
+-- Sub-categories under ID = 2 (Academics & Admissions)
+(8, N'Undergraduate Admissions', N'Admission guidelines, criteria, deadlines, and intake quotas', 1, 2),
+(9, N'International Exchange', N'Study abroad opportunities, partner universities, and student exchange', 1, 2),
 
--- Danh mục con thuộc ID = 3 (Hoạt động sinh viên)
-(10, N'Câu lạc bộ & Đội nhóm', N'Thông tin tuyển thành viên và hoạt động của các CLB học thuật, tình nguyện', 1, 3),
-(11, N'Giải đấu Thể thao & E-Sports', N'Các giải bóng đá, bóng bàn, cờ vua và giải đấu thể thao điện tử học đường', 1, 3),
+-- Sub-categories under ID = 3 (Student Life & Activities)
+(10, N'Clubs & Student Societies', N'Recruitment and activities of academic, cultural, and volunteer clubs', 1, 3),
+(11, N'Sports & E-Sports', N'Campus sports tournaments, football, table tennis, and e-sports leagues', 1, 3),
 
--- Danh mục con thuộc ID = 4 (Công nghệ & Sáng tạo)
-(12, N'Trí tuệ nhân tạo (AI)', N'Nghiên cứu ứng dụng Machine Learning, Generative AI và xử lý ngôn ngữ tự nhiên', 1, 4),
-(13, N'Kỹ thuật Phần mềm', N'Xu hướng kiến trúc phần mềm, phát triển ứng dụng Web, Cloud và DevOps', 1, 4);
+-- Sub-categories under ID = 4 (Technology & Innovation)
+(12, N'Artificial Intelligence (AI)', N'Research and applications in Machine Learning, Generative AI, and NLP', 1, 4),
+(13, N'Software Engineering', N'Software architecture, web development, cloud computing, and DevOps', 1, 4);
 GO
 
--- Tắt tính năng chèn ID trực tiếp để DB tự tăng ID cho các lần tạo mới sau này từ API/Front-end
 SET IDENTITY_INSERT category OFF;
+GO
+
+-- =========================================================================
+-- TAGS
+-- =========================================================================
+
+INSERT INTO tag (tag_name, note) VALUES 
+('AI', N'Artificial Intelligence and Machine Learning'),
+('DevOps', N'Software Development, CI/CD, and IT Operations'),
+('Academics', N'Academic regulations, coursework, and study guides'),
+('CampusLife', N'Student events, campus festivals, and club activities'),
+('Scholarship', N'Scholarship announcements and financial support');
+GO
+
+-- =========================================================================
+-- NEWS ARTICLES
+-- =========================================================================
+
+DECLARE @AdminID BIGINT = (SELECT TOP 1 accountid FROM system_account WHERE account_name = 'admin');
+
+-- Article 1: Under Category 1 (Campus News)
+INSERT INTO news_article (news_title, headline, news_content, news_source, news_status, created_date, categoryid, created_byid)
+VALUES (
+    N'University Welcomes New Students for Academic Year 2026 - 2027',
+    N'Over 5,000 freshmen officially join the university community',
+    N'The opening ceremony was held with great enthusiasm and solemnity, attended by distinguished university leaders, faculty members, and thousands of energetic new students...',
+    N'Office of Student Affairs',
+    1,
+    GETDATE(),
+    1,
+    @AdminID
+);
+
+-- Article 2: Under Category 12 (Artificial Intelligence)
+INSERT INTO news_article (news_title, headline, news_content, news_source, news_status, created_date, categoryid, created_byid)
+VALUES (
+    N'Workshop: Generative AI and Modern Software Engineering Trends',
+    N'Industry experts discuss AI agent workflows and digital transformation in 2026',
+    N'The workshop featured comprehensive demonstrations on practical machine learning integration, LLM fine-tuning, and automated cloud workflows...',
+    N'Faculty of Information Technology',
+    1,
+    GETDATE(),
+    12,
+    @AdminID
+);
+
+-- Article 3: Under Category 11 (Sports & E-Sports)
+INSERT INTO news_article (news_title, headline, news_content, news_source, news_status, created_date, categoryid, created_byid)
+VALUES (
+    N'Annual Campus Football Championship & E-Sports Tournament Kicks Off',
+    N'More than 32 teams compete for the prestigious championship trophy',
+    N'The annual sports tournament officially began this weekend with passionate matches, high team spirit, and energetic cheers from thousands of student spectators...',
+    N'Campus Sports Committee',
+    1,
+    GETDATE(),
+    11,
+    @AdminID
+);
+
+-- =========================================================================
+-- NEWS TAG MAPPINGS
+-- =========================================================================
+
+DECLARE @Article1ID BIGINT = (SELECT TOP 1 news_articleid FROM news_article WHERE news_title LIKE N'%University Welcomes%');
+DECLARE @Article2ID BIGINT = (SELECT TOP 1 news_articleid FROM news_article WHERE news_title LIKE N'%Workshop: Generative AI%');
+DECLARE @Article3ID BIGINT = (SELECT TOP 1 news_articleid FROM news_article WHERE news_title LIKE N'%Annual Campus Football%');
+
+DECLARE @TagCampusLife BIGINT = (SELECT TOP 1 tagid FROM tag WHERE tag_name = 'CampusLife');
+DECLARE @TagAI BIGINT = (SELECT TOP 1 tagid FROM tag WHERE tag_name = 'AI');
+DECLARE @TagDevOps BIGINT = (SELECT TOP 1 tagid FROM tag WHERE tag_name = 'DevOps');
+
+IF @Article1ID IS NOT NULL AND @TagCampusLife IS NOT NULL
+    INSERT INTO news_tag (news_articleid, tagid) VALUES (@Article1ID, @TagCampusLife);
+
+IF @Article2ID IS NOT NULL AND @TagAI IS NOT NULL
+    INSERT INTO news_tag (news_articleid, tagid) VALUES (@Article2ID, @TagAI);
+
+IF @Article2ID IS NOT NULL AND @TagDevOps IS NOT NULL
+    INSERT INTO news_tag (news_articleid, tagid) VALUES (@Article2ID, @TagDevOps);
+
+IF @Article3ID IS NOT NULL AND @TagCampusLife IS NOT NULL
+    INSERT INTO news_tag (news_articleid, tagid) VALUES (@Article3ID, @TagCampusLife);
+
 GO

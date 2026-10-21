@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 public interface NewsArticleRepository extends JpaRepository<NewsArticle,Long> {
     @Query("""
     select n from NewsArticle n 
-    where (:title is null or lower(n.newsTitle) like lower(concat('%',':title','%')))
+    where (:title is null or lower(n.newsTitle) like lower(concat('%', :title, '%')))
     and (:categoryId is null or n.category.id = :categoryId)
     and (:status is null or n.newsStatus = :status)
 """)

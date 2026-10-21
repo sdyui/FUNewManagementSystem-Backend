@@ -2,7 +2,7 @@ package com.funewmanagementsystem.repository;
 
 import com.funewmanagementsystem.entity.Category;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable; // SỬA: Phải import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,10 +14,8 @@ import java.util.List;
 public interface CategoryRepository extends JpaRepository<Category, Long> {
     boolean existsByCategoryNameIgnoreCase(String categoryName);
 
-    // SỬA: exists (có chữ s) thay vì exits
     boolean existsByCategoryNameIgnoreCaseAndIdNot(String categoryName, Long id);
 
-    // SỬA: exists (có chữ s) thay vì exits
     boolean existsByParentCategory_Id(Long parentCategoryId);
 
     List<Category> findByIsActiveTrue();

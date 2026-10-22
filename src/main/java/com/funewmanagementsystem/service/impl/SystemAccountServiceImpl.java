@@ -3,6 +3,7 @@ package com.funewmanagementsystem.service.impl;
 import com.funewmanagementsystem.dto.request.CreateAccountRequest;
 import com.funewmanagementsystem.dto.request.SystemAccountRequest;
 import com.funewmanagementsystem.dto.request.UpdateAccount;
+import com.funewmanagementsystem.dto.respone.LoginResponse;
 import com.funewmanagementsystem.dto.respone.PageResponse;
 import com.funewmanagementsystem.dto.respone.SystemAccountResponse;
 import com.funewmanagementsystem.entity.AccountRole;
@@ -12,6 +13,7 @@ import com.funewmanagementsystem.exception.InvalidCredentialsException;
 import com.funewmanagementsystem.exception.InvalidRequestException;
 import com.funewmanagementsystem.exception.ResourceNotFoundException;
 import com.funewmanagementsystem.repository.SystemAccountRepository;
+import com.funewmanagementsystem.security.JwtService;
 import com.funewmanagementsystem.service.SystemAccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
@@ -30,8 +32,9 @@ import java.util.Set;
 public class SystemAccountServiceImpl implements SystemAccountService {
     private final SystemAccountRepository systemAccountRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
     @Override
-    public SystemAccountResponse login(SystemAccountRequest systemAccountRequest) {
+    public LoginResponse login(SystemAccountRequest systemAccountRequest) {
         SystemAccount systemAccount = systemAccountRepository.
                 findByAccountName(systemAccountRequest.getAccountName()).orElseThrow(
                         () -> new InvalidCredentialsException("Invalid Account Name or Password")
@@ -39,7 +42,8 @@ public class SystemAccountServiceImpl implements SystemAccountService {
         if(!passwordEncoder.matches(systemAccountRequest.getAccountPassword(),systemAccount.getAccountPassword())){
             throw new InvalidCredentialsException("Invalid Account Name or Password");
         }
-        return new SystemAccountResponse(systemAccount.getId(),systemAccount.getAccountName(),systemAccount.getAccountEmail(),systemAccount.getAccountRole());
+        SystemAccountResponse account = new SystemAccountResponse(systemAccount.getId(),systemAccount.getAccountName(),systemAccount.getAccountEmail(),systemAccount.getAccountRole());
+        return new LoginResponse(jwtService.generateToken(systemAccount), "Bearer", account);
     }
 
     @Override

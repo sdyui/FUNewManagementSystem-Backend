@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.util.BeanUtil;
 import com.funewmanagementsystem.dto.request.CreateAccountRequest;
 import com.funewmanagementsystem.dto.request.SystemAccountRequest;
 import com.funewmanagementsystem.dto.request.UpdateAccount;
+import com.funewmanagementsystem.dto.respone.LoginResponse;
 import com.funewmanagementsystem.dto.respone.PageResponse;
 import com.funewmanagementsystem.dto.respone.SystemAccountResponse;
 import com.funewmanagementsystem.entity.SystemAccount;
@@ -72,6 +73,13 @@ public class SystemAccountController {
               "accountName": "admin",
               "accountPassword": "123456"
             }""";
+    private static final String LOGIN_RESPONSE_EXAMPLE = """
+            {
+              "accessToken": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsInJvbGUiOiJBRE1JTiJ9.signature",
+              "tokenType": "Bearer",
+              "account": """ + USER_EXAMPLE + """
+
+            }""";
     private static final String LOGIN_VALIDATION_ERROR_EXAMPLE = """
             {
               "timestamp": "2026-10-17T22:30:00",
@@ -136,7 +144,7 @@ public class SystemAccountController {
 
     @Operation(
             summary = "Login",
-            description = "Authenticate a user using account name and password.",
+            description = "Authenticate a user using account name and password. Returns a JWT to send as 'Authorization: Bearer <token>'.",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true,
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = SystemAccountRequest.class),
@@ -144,8 +152,8 @@ public class SystemAccountController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Login successful",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = SystemAccountResponse.class),
-                            examples = @ExampleObject(name = "account", value = USER_EXAMPLE))),
+                            schema = @Schema(implementation = LoginResponse.class),
+                            examples = @ExampleObject(name = "login", value = LOGIN_RESPONSE_EXAMPLE))),
             @ApiResponse(responseCode = "400", description = "Invalid request data (missing account name or password)",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -159,9 +167,9 @@ public class SystemAccountController {
 
 
     @PostMapping("/auth/login")
-    public ResponseEntity<SystemAccountResponse> login(@Valid @RequestBody SystemAccountRequest systemAccountRequest){
-        SystemAccountResponse systemAccountResponse = systemAccountService.login(systemAccountRequest);
-        return ResponseEntity.ok(systemAccountResponse);
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody SystemAccountRequest systemAccountRequest){
+        LoginResponse loginResponse = systemAccountService.login(systemAccountRequest);
+        return ResponseEntity.ok(loginResponse);
     }
     @Operation(
             summary = "Search accounts",

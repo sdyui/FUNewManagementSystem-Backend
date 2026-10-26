@@ -46,6 +46,10 @@ public class SystemAccountServiceImpl implements SystemAccountService {
         if(systemAccountRepository.existsByAccountEmail(createAccountRequest.getAccountEmail())){
             throw new DuplicateResourceException("Email already exists");
         }
+        if(!createAccountRequest.getAccountPassword().equals(createAccountRequest.getComfirmAccountPassword())){
+            throw new InvalidRequestException("comfirm password and password was wrongs");
+        }
+
 
 
         SystemAccount account = new SystemAccount();

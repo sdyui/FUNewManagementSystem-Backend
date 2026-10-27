@@ -56,6 +56,17 @@ public class NewsArticle {
     @Column(name = "ModifiedDate")
     private LocalDateTime modifiedDate;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "ArticleStatus", length = 30)
+    private  ArticleStatus articleStatus;
+
+    @Column(name = "PublishDate")
+    private LocalDateTime publishDate;
+
+    @Version
+    @Column
+    private Long version;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "NewsTag",

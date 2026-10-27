@@ -229,7 +229,7 @@ public class SystemAccountController {
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = @ExampleObject(name = "duplicate", value = DUPLICATE_EXAMPLE)))
     })
-    @PostMapping("/account")
+    @PostMapping("/auth/register")
     public ResponseEntity<SystemAccountResponse> createAccount(@Valid @RequestBody CreateAccountRequest createAccountRequest){
         SystemAccountResponse created = systemAccountService.createAccount(createAccountRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);

@@ -94,11 +94,11 @@ public class SystemAccountServiceImpl implements SystemAccountService {
     @Override
     public SystemAccountResponse save(Long id,UpdateAccount updateAccount) {
     SystemAccount account = systemAccountRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException("not found id"));
-    if(systemAccountRepository.existsByAccountEmail(updateAccount.getAccountEmail())){
+    if(systemAccountRepository.existsByAccountEmailAndIdNot(updateAccount.getAccountEmail(),id)){
         throw new DuplicateResourceException("Email already exist");
     }
         account.setAccountEmail(updateAccount.getAccountEmail());
-        account.setAccountRole(AccountRole.STAFF);
+
         SystemAccount s1 = systemAccountRepository.save(account);
         return new SystemAccountResponse(s1.getId(),s1.getAccountName(),s1.getAccountEmail(),s1.getAccountRole());
     }

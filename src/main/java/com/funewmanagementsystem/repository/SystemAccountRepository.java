@@ -14,6 +14,7 @@ import java.util.Optional;
 public interface SystemAccountRepository extends JpaRepository<SystemAccount,Long> {
     Optional<SystemAccount> findByAccountName(String accountName);
     boolean existsByAccountName(String accountName);
+    boolean existsByAccountEmailAndIdNot(String accountEmail, Long id);
     boolean existsByAccountEmail(String accountEmail);
     @Query("""
         select a from SystemAccount a

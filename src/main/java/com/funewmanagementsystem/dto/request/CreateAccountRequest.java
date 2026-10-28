@@ -24,6 +24,8 @@ public class CreateAccountRequest {
     @NotBlank(message = "Password cannot be empty")
     @Size(min = 6, message = "Password must be at least 6 characters")
     private String accountPassword;
-
+    @NotBlank(message = "Comfirm password can not be empty")
+    @Size(min = 6, message = "Comfirm password must be at lease 6 characters")
+    private String comfirmAccountPassword;
 
 }

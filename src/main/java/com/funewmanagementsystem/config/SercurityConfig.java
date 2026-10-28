@@ -33,6 +33,7 @@ public class SercurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v1/account/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/category/**", "/api/v1/categories/**").hasRole("ADMIN")
+                        .requestMatchers("/articles/**", "/api/v1/articles/**").hasAnyRole("CONTRIBUTOR", "STAFF", "ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint((req, res, ex) -> writeJson(res, 401, "Unauthorized", "Missing or invalid token", req))
@@ -48,4 +49,3 @@ public class SercurityConfig {
                 .formatted(status, error, msg, req.getRequestURI()));
     }
 }
-

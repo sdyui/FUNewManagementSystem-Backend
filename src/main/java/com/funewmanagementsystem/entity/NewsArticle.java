@@ -38,6 +38,9 @@ public class NewsArticle {
     @Column(name = "NewsSource", length = 255)
     private String newsSource;
 
+    @Column(name = "ThumbNail", length = 500)
+    private String thumbnail;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CategoryID", nullable = false)
     private Category category;

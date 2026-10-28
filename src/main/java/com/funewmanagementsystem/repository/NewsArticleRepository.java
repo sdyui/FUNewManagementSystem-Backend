@@ -1,5 +1,6 @@
 package com.funewmanagementsystem.repository;
 
+import com.funewmanagementsystem.entity.ArticleStatus;
 import com.funewmanagementsystem.entity.NewsArticle;
 
 import org.springframework.data.domain.Page;
@@ -21,4 +22,16 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle,Long> {
                              @Param("categoryId") Long categoryId,
                              @Param("status") Boolean status,
                              Pageable pageable);
+
+    @Query("""
+        SELECT a FROM NewsArticle a 
+        WHERE a.createdBy.id = :authorId 
+        AND (:status IS NULL OR a.articleStatus = :status)
+        ORDER BY a.createdDate DESC
+    """)
+    Page<NewsArticle> findMyArticles(
+            @Param("authorId") Long authorId,
+            @Param("status") ArticleStatus status,
+            Pageable pageable
+    );
 }

@@ -24,8 +24,9 @@ function App() {
         <Route path='contact' element={<Contact />} />
         <Route path='news' element={<NewsList />} />
        <Route path="news/:id" element={<NewsDetail />} />
+         <Route path='login' element={<Login />} />
       </Route>
-      <Route path='login' element={<Login />} />
+    
       <Route path='register' element={<Register />} />
       <Route path='*' element={<NotFound />} />
     </Routes>

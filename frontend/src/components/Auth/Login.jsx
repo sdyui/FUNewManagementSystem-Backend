@@ -28,7 +28,7 @@ function Login() {
         accountPassword: accountPassword,
       });
       localStorage.setItem("user", JSON.stringify(res.data));
-      navigate("/dashboard");
+      navigate("/");
     }catch (error) {
       if(error.response && error.response.status === 401){
         setError("Invalid username or password.");

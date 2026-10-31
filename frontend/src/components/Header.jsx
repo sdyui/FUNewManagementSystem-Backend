@@ -1,8 +1,16 @@
 import React from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import Nav from "react-bootstrap/Nav";
 
 function Header() {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("accessToken");
+    navigate("/login");
+  };
+
   return (
     <header className="navbar bg-white border-bottom shadow-sm">
       <div className="container-fluid d-flex justify-content-between align-items-center">
@@ -25,8 +33,6 @@ function Header() {
             <Nav.Link as={Link} to="/news">News</Nav.Link>
             <Nav.Link as={Link} to="/about">About</Nav.Link>
             <Nav.Link as={Link} to="/contact">Contact</Nav.Link>
-            
-            
           </Nav>
         </div>
 
@@ -60,7 +66,9 @@ function Header() {
               <hr className="dropdown-divider" />
             </li>
             <li>
-              <button className="dropdown-item text-danger">Logout</button>
+              <button className="dropdown-item text-danger" onClick={handleLogout}>
+                Logout
+              </button>
             </li>
           </ul>
         </div>

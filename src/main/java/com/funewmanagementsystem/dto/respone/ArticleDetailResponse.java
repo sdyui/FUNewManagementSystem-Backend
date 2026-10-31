@@ -25,6 +25,11 @@ public class ArticleDetailResponse {
     private LocalDateTime createdAt;
     @JsonProperty("updated_at")
     private LocalDateTime updatedAt;
+    @JsonProperty("publish_date")
+    private LocalDateTime publishDate;
+
+    @JsonProperty("latest_feedback")
+    private String latestFeedback;
     // Định nghĩa AuthorDto ở đây
     @Data
     @NoArgsConstructor

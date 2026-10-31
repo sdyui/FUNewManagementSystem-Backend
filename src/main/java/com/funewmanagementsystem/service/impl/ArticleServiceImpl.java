@@ -190,25 +190,25 @@ public class ArticleServiceImpl implements ArticleService {
         SystemAccount currentAuthor = currentUserService.getCurrentAccount();
 
         NewsArticle article = newsArticleRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài viết với id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("News article not found with id: " + id));
 
         // 1. Kiểm tra quyền tác giả
         if (!article.getCreatedBy().getId().equals(currentAuthor.getId())) {
-            throw new ForbiddenException("Bạn chỉ có thể gửi xét duyệt bài viết của chính mình!");
+            throw new ForbiddenException("You can only submit your own articles for review");
         }
 
         // 2. Quy tắc 8: Tiêu đề và nội dung không được để trống khi gửi xét duyệt
         if (article.getNewsTitle() == null || article.getNewsTitle().trim().isEmpty()) {
-            throw new InvalidRequestException("Không thể gửi xét duyệt: Tiêu đề bài viết không được để trống!");
+            throw new InvalidRequestException("Cannot submit for review: title must not be empty");
         }
         if (article.getNewsContent() == null || article.getNewsContent().trim().isEmpty()) {
-            throw new InvalidRequestException("Không thể gửi xét duyệt: Nội dung bài viết không được để trống!");
+            throw new InvalidRequestException("Cannot submit for review: content must not be empty");
         }
 
         // 3. Kiểm tra trạng thái hiện tại phải là DRAFT hoặc CHANGES_REQUESTED
         ArticleStatus currentStatus = article.getArticleStatus();
         if (currentStatus != ArticleStatus.DRAFT && currentStatus != ArticleStatus.CHANGES_REQUESTED) {
-            throw new InvalidRequestException("Chỉ được gửi xét duyệt khi bài viết ở trạng thái DRAFT hoặc CHANGES_REQUESTED. Trạng thái hiện tại: " + currentStatus);
+            throw new InvalidRequestException("Only DRAFT or CHANGES_REQUESTED articles can be submitted for review. Current status: " + currentStatus);
         }
 
         // 4. Quy tắc 7: Chuyển trạng thái sang PENDING_REVIEW thông qua WorkflowService để ghi lịch sử (Audit Log)
@@ -216,13 +216,13 @@ public class ArticleServiceImpl implements ArticleService {
                 article,
                 ArticleStatus.PENDING_REVIEW,
                 currentAuthor,
-                "Tác giả gửi bài viết để xét duyệt"
+                "Submitted for review by author"
         );
 
         return new SubmitArticleResponse(
                 transitionedArticle.getId(),
                 transitionedArticle.getArticleStatus(),
-                "Bài viết đã được gửi xét duyệt thành công!"
+                "Article submitted for review successfully"
         );
     }
 

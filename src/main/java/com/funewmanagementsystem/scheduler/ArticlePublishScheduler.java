@@ -33,7 +33,7 @@ public class ArticlePublishScheduler {
         for (NewsArticle article : dueArticles) {
             try {
                 // actor = null -> audit log ghi là hệ thống tự đăng
-                articleWorkFlowService.transition(article, ArticleStatus.PUBLISHED, null, "Tự động đăng theo lịch");
+                articleWorkFlowService.transition(article, ArticleStatus.PUBLISHED, null, "Auto-published at scheduled time");
                 log.info("Auto-published article {}", article.getId());
             } catch (Exception e) {
                 // Mỗi bài một transaction riêng: 1 bài lỗi (vd: editor vừa gỡ bài) không chặn các bài khác

@@ -1,9 +1,11 @@
 package com.funewmanagementsystem.controller;
 
+import com.funewmanagementsystem.dto.request.ReviewRequest;
 import com.funewmanagementsystem.dto.respone.ArticleDetailResponse;
 import com.funewmanagementsystem.dto.respone.PageResponse;
 import com.funewmanagementsystem.dto.respone.WorkflowLogResponse;
 import com.funewmanagementsystem.service.ReviewService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.PageRequest;
@@ -11,10 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -34,5 +33,34 @@ public class ReviewController {
     @GetMapping("/{id}/history")
     public ResponseEntity<List<WorkflowLogResponse>> history(@PathVariable long id) {
         return ResponseEntity.ok(reviewService.history(id));
+    }
+    @PutMapping("/{id}/request-changes")
+    public ResponseEntity<ArticleDetailResponse> requestChanges(@PathVariable long id,
+                                                                @Valid @RequestBody ReviewRequest request) {
+        return ResponseEntity.ok(reviewService.requestChanges(id, request.getNote()));
+    }
+
+    @PutMapping("/{id}/reject")
+    public ResponseEntity<ArticleDetailResponse> reject(@PathVariable long id,
+                                                        @Valid @RequestBody ReviewRequest request) {
+        return ResponseEntity.ok(reviewService.reject(id, request.getNote()));
+    }
+
+    @PutMapping("/{id}/approve")
+    public ResponseEntity<ArticleDetailResponse> approve(@PathVariable long id,
+                                                         @Valid @RequestBody(required = false) ReviewRequest request) {
+        ReviewRequest r = (request == null) ? new ReviewRequest() : request;
+        return ResponseEntity.ok(reviewService.approve(id, r.getPublishDate(), r.getNote()));
+    }
+
+    @PutMapping("/{id}/publish")
+    public ResponseEntity<ArticleDetailResponse> publishNow(@PathVariable long id) {
+        return ResponseEntity.ok(reviewService.publishNow(id));
+    }
+
+    @PutMapping("/{id}/archive")
+    public ResponseEntity<ArticleDetailResponse> archive(@PathVariable long id,
+                                                         @Valid @RequestBody(required = false) ReviewRequest request) {
+        return ResponseEntity.ok(reviewService.archive(id, request == null ? null : request.getNote()));
     }
 }

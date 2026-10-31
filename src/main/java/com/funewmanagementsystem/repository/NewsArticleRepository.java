@@ -30,7 +30,7 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle,Long> {
         SELECT a FROM NewsArticle a 
         WHERE a.createdBy.id = :authorId 
         AND (:status IS NULL OR a.articleStatus = :status)
-        ORDER BY a.createdDate DESC
+        
     """)
     Page<NewsArticle> findMyArticles(
             @Param("authorId") Long authorId,

@@ -128,7 +128,7 @@ public class ReviewServiceImpl implements ReviewService {
         NewsArticle article = findReviewable(id);
         requireStatus(article, ArticleStatus.SCHEDULED,ArticleStatus.PUBLISHED);
         NewsArticle saved = articleWorkFlowService.transition(article,ArticleStatus.ARCHIVED,me,note);
-        return mapToDetailResponse(saved,findLatestFeedback(saved));
+        return mapToDetailResponse(saved,null);
     }
 
 

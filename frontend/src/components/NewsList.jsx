@@ -36,8 +36,8 @@ export default function NewsList() {
   };
 
   // Lọc theo category
-  let newsList = categoryId
-    ? newsArticles.filter((item) => String(item.CategoryID) === categoryId)
+  let newsList = CategoryID
+    ? newsArticles.filter((item) => String(item.CategoryID) === CategoryID)
     : newsArticles;
 
   // Lọc theo từ khóa
@@ -58,7 +58,7 @@ export default function NewsList() {
       {/* Header */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <h2 className="mb-0">
-          {categoryId
+          {CategoryID
             ? `Tin tức thuộc danh mục: ${categories[categoryId] || categoryId}`
             : "Tất cả bài viết"}
         </h2>

@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Data
 @Builder
@@ -20,7 +21,9 @@ public class ArticleDetailResponse {
     private String content;
     private ArticleStatus status;
     private AuthorDto author;
-
+    private Long categoryId;
+    private String categoryName;
+    private Set<Long> tagIds;
     @JsonProperty("created_at")
     private LocalDateTime createdAt;
     @JsonProperty("updated_at")

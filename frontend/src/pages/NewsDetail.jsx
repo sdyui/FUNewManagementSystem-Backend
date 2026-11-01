@@ -1,67 +1,75 @@
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { Container, Row, Col, Button, Badge } from "react-bootstrap";
-import { News } from "../shared/News";
+import api from "../api/axiosClient";
+import { Container, Button, Badge, Spinner } from "react-bootstrap";
 import NotFound from "./NotFound";
 
 export default function NewsDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [news, setNews] = useState(null);
+  const [status, setStatus] = useState("loading");
 
-  const newsArticles = Array.isArray(News) ? News : [News];
-
-  const news = newsArticles.find(
-    (item) => String(item.NewsArticleID) === String(id),
-  );
-
-  if (!news) {
+  useEffect(() => {
+    setStatus("loading");
+    api
+      .get(`public/news/${id}`)
+      .then((res) => {
+        setNews(res.data);
+        setStatus("ok");
+      })
+      .catch(() => setStatus("notfound"));
+  }, [id]);
+  if (status === "loading") {
+    return (
+      <div className="text-center py-5">
+        <Spinner animation="border" />
+      </div>
+    );
+  }
+  if (status === "notfound") {
     return <NotFound />;
   }
-
   return (
-    <Container className="mt-4 text-start">
-      {/* Back */}
+    <Container className="py-4 text-start" style={{ maxWidth: 820 }}>
       <Button variant="link" className="px-0 mb-3" onClick={() => navigate(-1)}>
         ← Back
       </Button>
 
-      <Row className="g-4">
-        {/* News content */}
-        <Col md={12}>
-          <h1 className="fw-bold">{news.NewsTitle}</h1>
+      {news.categoryName && (
+        <Badge bg="primary" className="mb-2">
+          {news.categoryName}
+        </Badge>
+      )}
+      <h1 className="fw-bold">{news.title}</h1>
 
-          <div className="mb-3">
-            <Badge bg="secondary" className="me-2">
-              Category: {news.CategoryID}
-            </Badge>
+      <div className="text-muted mb-3">
+        {news.authorName && (
+          <>
+            By <strong>{news.authorName}</strong> ·{" "}
+          </>
+        )}
+        {news.publishDate ? new Date(news.publishDate).toLocaleString() : ""}
+      </div>
 
-            <span className="text-muted">
-              {news.CreatedDate
-                ? new Date(news.CreatedDate).toLocaleDateString()
-                : ""}
-            </span>
-          </div>
+      {news.headline && <h5 className="text-secondary">{news.headline}</h5>}
 
-          {/* Headline */}
-          <h5 className="text-secondary">{news.Headline}</h5>
+      {news.thumbnail && (
+        <img src={news.thumbnail} alt="" className="img-fluid rounded my-3" />
+      )}
 
-          <hr />
+      <hr />
 
-          {/* Content */}
-          <p
-            style={{
-              whiteSpace: "pre-line",
-              lineHeight: "1.8",
-            }}
-          >
-            {news.NewsContent}
-          </p>
+      {/* Hiển thị dạng text thường: React tự escape, tránh XSS */}
+      <div style={{ whiteSpace: "pre-line", lineHeight: 1.8 }}>
+        {news.content}
+      </div>
 
-          {/* Source */}
-          <div className="mt-4 p-3 bg-light rounded">
-            <strong>Source:</strong> {news.NewsSource || "Unknown"}
-          </div>
-        </Col>
-      </Row>
+      {news.newsSource && (
+        <div className="mt-4 p-3 bg-light rounded">
+          <strong>Source:</strong> {news.newsSource}
+        </div>
+      )}
     </Container>
   );
 }

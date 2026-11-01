@@ -5,15 +5,12 @@ import com.funewmanagementsystem.dto.request.UpdateArticleRequest;
 import com.funewmanagementsystem.dto.respone.ArticleDetailResponse;
 import com.funewmanagementsystem.dto.respone.PageResponse;
 import com.funewmanagementsystem.dto.respone.SubmitArticleResponse;
-import com.funewmanagementsystem.entity.AccountRole;
-import com.funewmanagementsystem.entity.ArticleStatus;
-import com.funewmanagementsystem.entity.Category;
-import com.funewmanagementsystem.entity.NewsArticle;
-import com.funewmanagementsystem.entity.SystemAccount;
-import com.funewmanagementsystem.entity.Tag;
+import com.funewmanagementsystem.dto.respone.TagResponse;
+import com.funewmanagementsystem.entity.*;
 import com.funewmanagementsystem.exception.ForbiddenException;
 import com.funewmanagementsystem.exception.InvalidRequestException;
 import com.funewmanagementsystem.exception.ResourceNotFoundException;
+import com.funewmanagementsystem.repository.ArticleWorkflowLogRepository;
 import com.funewmanagementsystem.repository.CategoryRepository;
 import com.funewmanagementsystem.repository.NewsArticleRepository;
 import com.funewmanagementsystem.repository.TagRepository;
@@ -23,12 +20,15 @@ import com.funewmanagementsystem.service.ArticleWorkFlowService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -40,7 +40,7 @@ public class ArticleServiceImpl implements ArticleService {
     private final TagRepository tagRepository;
     private final CurrentUserService currentUserService;
     private final ArticleWorkFlowService articleWorkFlowService;
-
+    private final ArticleWorkflowLogRepository articleWorkflowLogRepository;
     /**
      * Chức năng 1: Tạo bài viết mới dành cho Contributor
      * Quy tắc 1 & 2: Trạng thái ban đầu luôn là DRAFT, tác giả là tài khoản đang đăng nhập.
@@ -226,6 +226,12 @@ public class ArticleServiceImpl implements ArticleService {
         );
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<TagResponse> getAllTags() {
+        return tagRepository.findAll(Sort.by("tagName")).stream().map(t -> new TagResponse(t.getId(),t.getTagName(),t.getNote())).toList();
+    }
+
     /**
      * Hàm phụ trợ chuyển đổi từ Entity (NewsArticle) sang DTO (ArticleDetailResponse)
      */
@@ -248,7 +254,23 @@ public class ArticleServiceImpl implements ArticleService {
                 .author(authorDto)
                 .createdAt(article.getCreatedDate())
                 .updatedAt(article.getModifiedDate())
+                .publishDate(article.getPublishDate())
+                .latestFeedback(findLatestFeedback(article))
+                .categoryId(article.getCategory() == null ? null : article.getCategory().getId())
+                .categoryName(article.getCategory() == null ? null : article.getCategory().getCategoryName())
+                .tagIds(article.getTags().stream().map(Tag::getId).collect(Collectors.toSet()))
                 .build();
+    }
+    private String findLatestFeedback(NewsArticle article) {
+        ArticleStatus status = article.getArticleStatus();
+        if (status != ArticleStatus.CHANGES_REQUESTED && status != ArticleStatus.ARCHIVED) {
+            return null;
+        }
+        return articleWorkflowLogRepository
+                .findFirstByArticleIdAndToStatusInAndNoteIsNotNullOrderByActionAtDescIdDesc(
+                        article.getId(), List.of(ArticleStatus.CHANGES_REQUESTED, ArticleStatus.ARCHIVED))
+                .map(ArticleWorkflowLog::getNote)
+                .orElse(null);
     }
 }
 

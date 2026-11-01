@@ -7,6 +7,7 @@ import InputGroup from "react-bootstrap/InputGroup";
 import { useNavigate } from "react-router";
 import axios from "axios";
 import Alert from "react-bootstrap/Alert";
+import { HOME_BY_ROLE } from "./auth";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1/";
 function Login() {
   const [validated, setValidated] = useState(false);
@@ -28,7 +29,7 @@ function Login() {
         accountPassword: accountPassword,
       });
       localStorage.setItem("user", JSON.stringify(res.data));
-      navigate("/");
+      navigate(HOME_BY_ROLE[res.data.account.accountRole]||"/news");
     }catch (error) {
       if(error.response && error.response.status === 401){
         setError("Invalid username or password.");

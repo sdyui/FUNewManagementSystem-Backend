@@ -1,14 +1,12 @@
 import { useState, useEffect } from "react";
 import { Container, Table, Button, Form, InputGroup } from "react-bootstrap";
 import { Link } from "react-router";
-import axios from "axios";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-// console.log("API:", API_BASE_URL);
+import api from "../api/axiosClient";
+import EditEmail from "./EditEmail";
 export default function ManageAccount() {
   const [searchTerm, setSearchTerm] = useState("");
   const [accounts, setAccounts] = useState([]);
+  const [editing, setEditing] = useState(null);
   // Search account
   let accountList = accounts;
 
@@ -25,7 +23,7 @@ export default function ManageAccount() {
   useEffect(() => {
     async function fetchAccounts() {
       try {
-        const response = await axios.get(`${API_BASE_URL}account`);
+        const response = await api.get("account");
         // console.log("Fetched accounts:", response.data);
         setAccounts(response.data.content ?? []);
       } catch (error) {
@@ -34,6 +32,14 @@ export default function ManageAccount() {
     }
     fetchAccounts();
   }, []);
+
+  const handleEmailSaved = (updated) => {
+    setAccounts((prev) =>
+      prev.map((a) =>
+        a.accountId === updated.accountId ? { ...a, email: updated.email } : a,
+      ),
+    );
+  };
   return (
     <Container className="mt-4">
       {/* Header */}
@@ -100,8 +106,7 @@ export default function ManageAccount() {
                       variant="warning"
                       size="sm"
                       className="flex-fill"
-                      as={Link}
-                      to={`/accounts/edit/${item.accountId}`}
+                      onClick={() => setEditing(item)}
                     >
                       Edit
                     </Button>
@@ -122,6 +127,14 @@ export default function ManageAccount() {
           )}
         </tbody>
       </Table>
+
+      <EditEmail
+        key={editing?.accountId ?? "none"}
+        show={editing !== null}
+        account={editing}
+        onClose={() => setEditing(null)}
+        onSaved={handleEmailSaved}
+      />
     </Container>
   );
 }

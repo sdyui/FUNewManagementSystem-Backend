@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.util.BeanUtil;
 import com.funewmanagementsystem.dto.request.CreateAccountRequest;
 import com.funewmanagementsystem.dto.request.SystemAccountRequest;
 import com.funewmanagementsystem.dto.request.UpdateAccount;
+import com.funewmanagementsystem.dto.request.UpdateRoleRequest;
 import com.funewmanagementsystem.dto.respone.LoginResponse;
 import com.funewmanagementsystem.dto.respone.PageResponse;
 import com.funewmanagementsystem.dto.respone.SystemAccountResponse;
@@ -267,6 +268,13 @@ public class SystemAccountController {
     public ResponseEntity<?>updateSystemAccount(@PathVariable Long id,
                                                  @Valid @RequestBody UpdateAccount updateAccount){
         return ResponseEntity.ok(systemAccountService.save(id,updateAccount));
+    }
+    @Operation(summary = "Change account role (ADMIN only)",
+            description = "Cannot change your own role or remove the last ADMIN.")
+    @PutMapping("/account/{id}/role")
+    public ResponseEntity<SystemAccountResponse> changeRole(@PathVariable Long id,
+                                                            @Valid @RequestBody UpdateRoleRequest request) {
+        return ResponseEntity.ok(systemAccountService.changeRole(id, request.getAccountRole()));
     }
 
 

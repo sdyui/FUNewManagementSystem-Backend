@@ -1,12 +1,39 @@
 import { useState, useEffect } from "react";
-import { Container, Table, Button, Form, InputGroup } from "react-bootstrap";
-import { Link } from "react-router";
-import api from "../api/axiosClient";
+import { Container, Table, Button, Form, InputGroup, Alert } from "react-bootstrap";
+import api, { getErrorMessage } from "../api/axiosClient";
 import EditEmail from "./EditEmail";
+import { getUser } from "./Auth/auth";
 export default function ManageAccount() {
   const [searchTerm, setSearchTerm] = useState("");
   const [accounts, setAccounts] = useState([]);
   const [editing, setEditing] = useState(null);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const myId = getUser()?.account?.accountId; // không cho tự đổi role của mình
+
+  const ROLES = ["STAFF", "EDITOR", "ADMIN"];
+
+  const handleRoleChange = async (item, newRole) => {
+    if (newRole === item.accountRole) return;
+    if (!window.confirm(`Change role of "${item.accountName}" from ${item.accountRole} to ${newRole}?`)) {
+      return;
+    }
+    setError("");
+    setMessage("");
+    try {
+      const res = await api.put(`account/${item.accountId}/role`, { accountRole: newRole });
+      // Cập nhật lại đúng dòng đó trong bảng, không cần tải lại cả danh sách
+      setAccounts((prev) =>
+        prev.map((a) =>
+          a.accountId === item.accountId ? { ...a, accountRole: res.data.accountRole } : a,
+        ),
+      );
+      setMessage(`${item.accountName} is now ${res.data.accountRole}.`);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
+  };
+
   // Search account
   let accountList = accounts;
 
@@ -59,17 +86,20 @@ export default function ManageAccount() {
             <Button variant="primary">Search</Button>
           </InputGroup>
 
-          {/* Add Account */}
-          <Button
-            as={Link}
-            to="/accounts/add"
-            variant="success"
-            className="text-nowrap"
-          >
-            + Add Account
-          </Button>
+        
         </div>
       </div>
+
+      {message && (
+        <Alert variant="success" dismissible onClose={() => setMessage("")}>
+          {message}
+        </Alert>
+      )}
+      {error && (
+        <Alert variant="danger" dismissible onClose={() => setError("")}>
+          {error}
+        </Alert>
+      )}
 
       {/* Account Table */}
       <Table striped bordered hover responsive>
@@ -98,7 +128,25 @@ export default function ManageAccount() {
 
                 <td>{item.email}</td>
 
-                <td>{item.accountRole}</td>
+                <td style={{ minWidth: 140 }}>
+                  {item.accountId === myId ? (
+                    <span title="You cannot change your own role">
+                      {item.accountRole} <small className="text-muted">(you)</small>
+                    </span>
+                  ) : (
+                    <Form.Select
+                      size="sm"
+                      value={item.accountRole}
+                      onChange={(e) => handleRoleChange(item, e.target.value)}
+                    >
+                      {ROLES.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </Form.Select>
+                  )}
+                </td>
 
                 <td>
                   <div className="d-flex gap-2">
@@ -111,9 +159,7 @@ export default function ManageAccount() {
                       Edit
                     </Button>
 
-                    <Button variant="danger" size="sm" className="flex-fill">
-                      Delete
-                    </Button>
+                    
                   </div>
                 </td>
               </tr>

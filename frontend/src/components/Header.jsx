@@ -1,14 +1,16 @@
 import React from "react";
 import { Link, useNavigate } from "react-router";
 import Nav from "react-bootstrap/Nav";
-
+import { getUser } from "./Auth/auth";
 function Header() {
+  const account = getUser()?.account;
+  const initial = account?.accountName?.charAt(0).toUpperCase() || "?";
   const navigate = useNavigate();
 
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("accessToken");
-    navigate("/login");
+    navigate("/");
   };
 
   return (
@@ -30,9 +32,15 @@ function Header() {
 
           {/* Nav links moved up here */}
           <Nav className="gap-2 d-none d-md-flex fw-medium">
-            <Nav.Link as={Link} to="/news">News</Nav.Link>
-            <Nav.Link as={Link} to="/about">About</Nav.Link>
-            <Nav.Link as={Link} to="/contact">Contact</Nav.Link>
+            <Nav.Link as={Link} to="/news">
+              News
+            </Nav.Link>
+            <Nav.Link as={Link} to="/about">
+              About
+            </Nav.Link>
+            <Nav.Link as={Link} to="/contact">
+              Contact
+            </Nav.Link>
           </Nav>
         </div>
 
@@ -48,13 +56,16 @@ function Header() {
               className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
               style={{ width: "36px", height: "36px" }}
             >
-              A
+              {initial}
             </div>
-            <span>Admin</span>
+            <span>{account?.accountName}</span>
           </button>
           <ul className="dropdown-menu dropdown-menu-end">
             <li>
-              <h6 className="dropdown-header">Admin Account</h6>
+              <h6 className="dropdown-header">
+                {account?.email}
+                <div className="small text-muted">{account?.accountRole}</div>
+              </h6>
             </li>
             <li>
               <button className="dropdown-item">Profile</button>
@@ -66,7 +77,10 @@ function Header() {
               <hr className="dropdown-divider" />
             </li>
             <li>
-              <button className="dropdown-item text-danger" onClick={handleLogout}>
+              <button
+                className="dropdown-item text-danger"
+                onClick={handleLogout}
+              >
                 Logout
               </button>
             </li>

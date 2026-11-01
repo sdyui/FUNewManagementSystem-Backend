@@ -13,6 +13,7 @@ import com.funewmanagementsystem.exception.InvalidCredentialsException;
 import com.funewmanagementsystem.exception.InvalidRequestException;
 import com.funewmanagementsystem.exception.ResourceNotFoundException;
 import com.funewmanagementsystem.repository.SystemAccountRepository;
+import com.funewmanagementsystem.security.CurrentUserService;
 import com.funewmanagementsystem.security.JwtService;
 import com.funewmanagementsystem.service.SystemAccountService;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class SystemAccountServiceImpl implements SystemAccountService {
     private final SystemAccountRepository systemAccountRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final CurrentUserService currentUserService;
     @Override
     public LoginResponse login(SystemAccountRequest systemAccountRequest) {
         SystemAccount systemAccount = systemAccountRepository.
@@ -114,6 +116,18 @@ public class SystemAccountServiceImpl implements SystemAccountService {
     @Override
     public Optional<SystemAccount> findById(Long id) {
         return systemAccountRepository.findById(id);
+    }
+    @Transactional
+    @Override
+    public SystemAccountResponse changeRole(Long id, AccountRole newRole) {
+        SystemAccount account =  systemAccountRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException("not found id"));
+        SystemAccount me = currentUserService.getCurrentAccount();
+        if(me.getId().equals(account.getId())){
+            throw new InvalidRequestException("You are not change your own role");
+        }
+        account.setAccountRole(newRole);
+         systemAccountRepository.save(account);
+        return new SystemAccountResponse(account.getId(),account.getAccountName(),account.getAccountEmail(),account.getAccountRole());
     }
 
     private static final Set<String> SORTABLE_FIELDS = Set.of("id","accountName","accountEmail","accountRole");

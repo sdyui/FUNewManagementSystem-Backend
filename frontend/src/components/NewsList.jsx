@@ -127,21 +127,76 @@ export default function NewsList() {
     setShowModal(true);
   };
 
-  // Lọc theo category
-  let newsList = CategoryID
-    ? newsArticles.filter((item) => String(item.CategoryID) === CategoryID)
-    : newsArticles;
+  // 5. Lưu bài viết (Tạo mới POST hoặc Cập nhật PUT)
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setError("");
+    setMessage("");
 
-  // Lọc theo từ khóa
-  if (searchTerm.trim() !== "") {
-    const keyword = searchTerm.toLowerCase();
+    const requestBody = {
+      title: title,
+      thumbnail: thumbnail,
+      content: content,
+      categoryId: categoryId === "" ? null : Number(categoryId),
+    };
 
-    newsList = newsList.filter(
-      (item) =>
-        item.NewsTitle?.toLowerCase().includes(keyword) ||
-        item.Headline?.toLowerCase().includes(keyword) ||
-        item.NewsSource?.toLowerCase().includes(keyword) ||
-        categories[item.CategoryID]?.toLowerCase().includes(keyword),
+    try {
+      let response;
+      if (editingId === null) {
+        response = await fetch(ARTICLE_API, {
+          method: "POST",
+          headers: getHeaders(),
+          body: JSON.stringify(requestBody),
+        });
+      } else {
+        response = await fetch(`${ARTICLE_API}/${editingId}`, {
+          method: "PUT",
+          headers: getHeaders(),
+          body: JSON.stringify(requestBody),
+        });
+      }
+
+      const resData = await response.json();
+
+      if (response.ok) {
+        if (editingId === null) {
+          setMessage("Created article (DRAFT) successfully!");
+        } else {
+          setMessage("Updated article successfully!");
+        }
+        setShowModal(false);
+        fetchArticles();
+      } else {
+        setError(resData.message || "Failed to save article.");
+      }
+    } catch {
+      setError("Error connecting to server.");
+    }
+  };
+
+  // 6. Xem chi tiết bài viết (GET /api/v1/articles/{id})
+  const handleViewDetail = async (id) => {
+    setError("");
+    try {
+      const response = await fetch(`${ARTICLE_API}/${id}`, {
+        headers: getHeaders(),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setSelectedArticle(data);
+        setShowDetailModal(true);
+      } else {
+        setError(data.message || "Failed to load article details.");
+      }
+    } catch {
+      setError("Error connecting to server.");
+    }
+  };
+
+  // 7. Gửi bài viết để xét duyệt (PUT /api/v1/articles/{id}/submit)
+  const handleSubmitReview = async (id) => {
+    const confirmSubmit = window.confirm(
+      "Are you sure you want to submit this article for review?"
     );
     if (!confirmSubmit) {
       return;
@@ -170,33 +225,60 @@ export default function NewsList() {
 
   return (
     <Container className="mt-4">
-      {/* Header */}
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
-        <h2 className="mb-0">
-          {CategoryID
-            ? `Tin tức thuộc danh mục: ${categories[categoryId] || categoryId}`
-            : "Tất cả bài viết"}
-        </h2>
+      <h2 className="mb-3">Article Management</h2>
 
-        {/* Search */}
-        <InputGroup style={{ maxWidth: "400px" }}>
-          <Form.Control
-            placeholder="Tìm kiếm tin tức..."
-            aria-label="Tìm kiếm tin tức"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+      {message && (
+        <Alert variant="success" onClose={() => setMessage("")} dismissible>
+          {message}
+        </Alert>
+      )}
+      {error && (
+        <Alert variant="danger" onClose={() => setError("")} dismissible>
+          {error}
+        </Alert>
+      )}
 
-          <Button variant="primary">Search</Button>
-        </InputGroup>
+      {/* Thanh công cụ Lọc theo Status & Thêm mới dùng Accordion giống hệt Category */}
+      <Accordion defaultActiveKey="0" className="mb-4">
+        <Accordion.Item eventKey="0">
+          <Accordion.Header>Filter & Actions</Accordion.Header>
+          <Accordion.Body>
+            <Form
+              onSubmit={(e) => {
+                e.preventDefault();
+                fetchArticles();
+              }}
+            >
+              <Row className="align-items-center g-2">
+                <Col md={8}>
+                  <Form.Select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                  >
+                    <option value="">-- All Status --</option>
+                    <option value="DRAFT">DRAFT</option>
+                    <option value="PENDING_REVIEW">PENDING_REVIEW</option>
+                    <option value="CHANGES_REQUESTED">CHANGES_REQUESTED</option>
+                    <option value="APPROVED">APPROVED</option>
+                    <option value="PUBLISHED">PUBLISHED</option>
+                    <option value="REJECTED">REJECTED</option>
+                  </Form.Select>
+                </Col>
+                <Col md={4} className="d-flex gap-2">
+                  <Button variant="primary" type="submit">
+                    Filter
+                  </Button>
+                  <Button variant="success" onClick={handleOpenCreate}>
+                    + Add Article
+                  </Button>
+                </Col>
+              </Row>
+            </Form>
+          </Accordion.Body>
+        </Accordion.Item>
+      </Accordion>
 
-        {/* Add */}
-        <Button variant="success" className="text-nowrap" onClick={handleAdd}>
-          + Add News
-        </Button>
-      </div>
-
-      {/* News Table */}
+      {/* Bảng danh sách Article */}
       <Table striped bordered hover responsive>
         <thead>
           <tr>

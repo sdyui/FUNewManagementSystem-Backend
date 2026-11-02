@@ -21,43 +21,34 @@ import ReviewArticle from "./pages/ReviewArticle";
 function App() {
   return (
     <Routes>
-      <Route path='/' element={<Layout />}>
-        <Route index element={<Home />} />
-        <Route path="users" element={<AccountList />} />
-        <Route path='about' element={<About />} />
-        <Route path='category' element={<CategoryList/>}/>
-        <Route path='contact' element={<Contact />} />
-        <Route path='news' element={<NewsList />} />
-        <Route path="news/:id" element={<NewsDetail />} />
-        <Route path='articles' element={<NewsList />} />
-        <Route path="articles/:id" element={<NewsDetail />} />
-      {/*customer*/ }
-      <Route index element={<Home />} />
-      <Route path="news/:id" element={<NewsDetail />} />
       <Route path="login" element={<Login />} />
       <Route path="register" element={<Register />} />
 
-      {/*login user*/ }
+      {/* login user */}
       <Route element={<ProtectedRoute />}>
-        <Route element={<Layout />}>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Home />} />
           <Route path="about" element={<About />} />
           <Route path="contact" element={<Contact />} />
           <Route path="news" element={<NewsList />} />
-          
-          {/*editor*/ }
+          <Route path="news/:id" element={<NewsDetail />} />
+          <Route path="articles" element={<NewsList />} />
+          <Route path="articles/:id" element={<NewsDetail />} />
+
+          {/* editor */}
           <Route element={<ProtectedRoute roles={["EDITOR", "ADMIN"]} />}>
             <Route path="review" element={<ReviewQueue />} />
             <Route path="review/:id" element={<ReviewArticle />} />
           </Route>
 
-          {/*author*/ }
+          {/* author */}
           <Route element={<ProtectedRoute roles={["STAFF", "CONTRIBUTOR", "ADMIN"]} />}>
             <Route path="my-articles" element={<MyArticles />} />
             <Route path="my-articles/new" element={<ArticleForm />} />
             <Route path="my-articles/:id/edit" element={<ArticleForm />} />
           </Route>
 
-          {/*admin*/ }
+          {/* admin */}
           <Route element={<ProtectedRoute roles={["ADMIN"]} />}>
             <Route path="users" element={<AccountList />} />
             <Route path="category" element={<CategoryList />} />

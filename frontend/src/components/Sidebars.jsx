@@ -6,18 +6,24 @@ import { getRole } from "./Auth/auth";
 // Menu theo role
 const MENUS = {
   ADMIN: [
-    {to : "/review", label: "Review Queue"},
-    { to: "/my-articles", label: "My articles" },
+    { to: "/news", label: "Articles" },
     { to: "/category", label: "Category" },
+    { to: "/review", label: "Review Queue" },
     { to: "/users", label: "Users" },
   ],
-  EDITOR: [{ to: "/review", label: "Review queue" }],
-  STAFF: [{ to: "/my-articles", label: "My articles" }],
-  CONTRIBUTOR: [{ to: "/my-articles", label: "My articles" }],
+  EDITOR: [
+    { to: "/review", label: "Review Queue" },
+    { to: "/news", label: "Articles" },
+  ],
+  STAFF: [{ to: "/news", label: "Articles" }],
+  CONTRIBUTOR: [{ to: "/news", label: "Articles" }],
 };
 
 function Sidebar() {
-  const navItems = MENUS[getRole()] || [];
+  const navItems = MENUS[getRole()] || [
+    { to: "/news", label: "Articles" },
+    { to: "/category", label: "Category" },
+  ];
 
   return (
     <aside

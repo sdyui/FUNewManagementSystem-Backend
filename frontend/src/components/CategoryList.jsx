@@ -10,7 +10,6 @@ import {
   Alert,
   Row,
   Col,
-  Accordion,
 } from "react-bootstrap";
 
 const API_BASE_URL =
@@ -27,15 +26,6 @@ export default function CategoryList() {
   const [searchName, setSearchName] = useState("");
 
   // State cho Modal Thêm / Sửa
-export default function ManageCategory() {
-  // 1. State danh sách Category
-  const [categories, setCategories] = useState([]);
-  const [activeCategories, setActiveCategories] = useState([]);
-
-  // 2. State tìm kiếm
-  const [searchName, setSearchName] = useState("");
-
-  // 3. State cho Modal Thêm / Sửa
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [categoryName, setCategoryName] = useState("");
@@ -91,47 +81,6 @@ export default function ManageCategory() {
   };
 
   // 2. Lấy danh sách Category đang active để làm dropdown chọn danh mục cha
-  // 4. State hiển thị thông báo
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-
-  // Hàm lấy Token từ localStorage (do Login.jsx lưu trong key "user")
-  const getHeaders = () => {
-    let token = localStorage.getItem("accessToken");
-    if (!token) {
-      const savedUser = localStorage.getItem("user");
-      if (savedUser) {
-        const parsed = JSON.parse(savedUser);
-        token = parsed.accessToken;
-      }
-    }
-    return {
-      "Content-Type": "application/json",
-      Authorization: token ? `Bearer ${token}` : "",
-    };
-  };
-
-  // Tải danh sách Category từ Backend
-  const fetchCategories = async () => {
-    try {
-      const url = searchName
-        ? `${CATEGORY_API}?name=${encodeURIComponent(searchName)}&size=50`
-        : `${CATEGORY_API}?size=50`;
-
-      const response = await fetch(url, { headers: getHeaders() });
-      const data = await response.json();
-
-      if (response.ok) {
-        setCategories(data.content || []);
-      } else {
-        setError(data.message || "Không thể tải danh sách danh mục (Hãy đăng nhập tài khoản ADMIN)");
-      }
-    } catch (err) {
-      setError("Lỗi kết nối tới Backend");
-    }
-  };
-
-  // Tải danh sách Category đang Active cho ô chọn Danh mục cha
   const fetchActiveCategories = async () => {
     try {
       const response = await fetch(`${CATEGORY_API}/active`, {
@@ -139,10 +88,10 @@ export default function ManageCategory() {
       });
       if (response.ok) {
         const data = await response.json();
-        setActiveCategories(data);
+        setActiveCategories(data || []);
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
+      // ignore
     }
   };
 
@@ -151,7 +100,7 @@ export default function ManageCategory() {
     fetchActiveCategories();
   }, []);
 
-  // Mở Modal để Thêm mới
+  // 3. Mở Modal Tạo mới
   const handleOpenCreate = () => {
     setEditingId(null);
     setCategoryName("");
@@ -162,18 +111,18 @@ export default function ManageCategory() {
     setShowModal(true);
   };
 
-  // Mở Modal để Sửa
+  // 4. Mở Modal Chỉnh sửa
   const handleOpenEdit = (cat) => {
     setEditingId(cat.id);
-    setCategoryName(cat.categoryName);
+    setCategoryName(cat.categoryName || "");
     setCategoryDescription(cat.categoryDescription || "");
-    setParentCategoryId(cat.parentCategoryId || "");
-    setIsActive(cat.isActive);
+    setParentCategoryId(cat.parentCategoryId ? String(cat.parentCategoryId) : "");
+    setIsActive(cat.isActive !== undefined ? cat.isActive : true);
     setError("");
     setShowModal(true);
   };
 
-  // Lưu Danh mục (Thêm mới hoặc Cập nhật)
+  // 5. Lưu Category (Tạo mới hoặc Cập nhật)
   const handleSave = async (e) => {
     e.preventDefault();
     setError("");
@@ -182,7 +131,8 @@ export default function ManageCategory() {
     const requestBody = {
       categoryName: categoryName,
       categoryDescription: categoryDescription,
-      parentCategoryId: parentCategoryId ? Number(parentCategoryId) : null,
+      parentCategoryId:
+        parentCategoryId === "" ? null : Number(parentCategoryId),
       isActive: isActive,
     };
 
@@ -202,28 +152,31 @@ export default function ManageCategory() {
         });
       }
 
-      const data = await response.json();
+      const resData = await response.json();
 
       if (response.ok) {
-        setMessage(
-          editingId === null
-            ? "Tạo danh mục thành công!"
-            : "Cập nhật danh mục thành công!"
-        );
+        if (editingId === null) {
+          setMessage("Created category successfully!");
+        } else {
+          setMessage("Updated category successfully!");
+        }
         setShowModal(false);
         fetchCategories();
         fetchActiveCategories();
       } else {
-        setError(data.message || "Có lỗi xảy ra khi lưu danh mục");
+        setError(resData.message || "Failed to save category.");
       }
-    } catch (err) {
-      setError("Lỗi kết nối Backend");
+    } catch {
+      setError("Error connecting to server.");
     }
   };
 
-  // Xóa Danh mục
+  // 6. Xóa Category
   const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa danh mục này?")) {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this category?"
+    );
+    if (!confirmDelete) {
       return;
     }
 
@@ -237,21 +190,21 @@ export default function ManageCategory() {
       });
 
       if (response.ok) {
-        setMessage("Xóa danh mục thành công!");
+        setMessage("Deleted category successfully!");
         fetchCategories();
         fetchActiveCategories();
       } else {
         const data = await response.json();
-        setError(data.message || "Không thể xóa danh mục này");
+        setError(data.message || "Cannot delete this category.");
       }
-    } catch (err) {
-      setError("Lỗi kết nối Backend");
+    } catch {
+      setError("Error connecting to server.");
     }
   };
 
   return (
-    <Container>
-      <h2>Manage Categories</h2>
+    <Container className="mt-4">
+      <h2 className="mb-3">Category Management</h2>
 
       {message && (
         <Alert variant="success" onClose={() => setMessage("")} dismissible>
@@ -264,10 +217,10 @@ export default function ManageCategory() {
         </Alert>
       )}
 
-      {/* Component Accordion từ trang tài liệu React-Bootstrap */}
-      <Accordion defaultActiveKey="0">
+      {/* Thanh công cụ Tìm kiếm & Thêm mới dùng Accordion của React-Bootstrap */}
+      <Accordion defaultActiveKey="0" className="mb-4">
         <Accordion.Item eventKey="0">
-          <Accordion.Header>Tìm kiếm & Thêm mới Danh mục</Accordion.Header>
+          <Accordion.Header>Search & Actions</Accordion.Header>
           <Accordion.Body>
             <Form
               onSubmit={(e) => {
@@ -275,31 +228,31 @@ export default function ManageCategory() {
                 fetchCategories();
               }}
             >
-              <Form.Group controlId="searchName">
-                <Form.Label>Tên danh mục</Form.Label>
-                <Form.Control
-                  type="text"
-                  placeholder="Nhập tên danh mục cần tìm..."
-                  value={searchName}
-                  onChange={(e) => setSearchName(e.target.value)}
-                />
-              </Form.Group>
-              <br />
-              <Button variant="primary" type="submit">
-                Search
-              </Button>{" "}
-              <Button variant="success" onClick={handleOpenCreate}>
-                + Add Category
-              </Button>
+              <Row className="align-items-center g-2">
+                <Col md={8}>
+                  <Form.Control
+                    type="text"
+                    placeholder="Search by category name..."
+                    value={searchName}
+                    onChange={(e) => setSearchName(e.target.value)}
+                  />
+                </Col>
+                <Col md={4} className="d-flex gap-2">
+                  <Button variant="primary" type="submit">
+                    Search
+                  </Button>
+                  <Button variant="success" onClick={handleOpenCreate}>
+                    + Add Category
+                  </Button>
+                </Col>
+              </Row>
             </Form>
           </Accordion.Body>
         </Accordion.Item>
       </Accordion>
 
-      <br />
-
-      {/* Bảng hiển thị danh sách Category */}
-      <Table striped bordered hover>
+      {/* Bảng danh sách Category */}
+      <Table striped bordered hover responsive>
         <thead>
           <tr>
             <th>#</th>
@@ -317,9 +270,11 @@ export default function ManageCategory() {
               <tr key={cat.id}>
                 <td>{index + 1}</td>
                 <td>{cat.id}</td>
-                <td>{cat.categoryName}</td>
+                <td>
+                  <strong>{cat.categoryName}</strong>
+                </td>
                 <td>{cat.categoryDescription}</td>
-                <td>{cat.parentCategoryName || "Root Category"}</td>
+                <td>{cat.parentCategoryName || "Root"}</td>
                 <td>
                   {cat.isActive ? (
                     <Badge bg="success">Active</Badge>
@@ -331,10 +286,11 @@ export default function ManageCategory() {
                   <Button
                     variant="warning"
                     size="sm"
+                    className="me-2"
                     onClick={() => handleOpenEdit(cat)}
                   >
                     Edit
-                  </Button>{" "}
+                  </Button>
                   <Button
                     variant="danger"
                     size="sm"
@@ -347,64 +303,63 @@ export default function ManageCategory() {
             ))
           ) : (
             <tr>
-              <td colSpan="7">Không tìm thấy danh mục nào.</td>
+              <td colSpan="7" className="text-center">
+                No categories found.
+              </td>
             </tr>
           )}
         </tbody>
       </Table>
 
-      {/* Modal Form dùng cho Thêm mới và Cập nhật */}
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
+      {/* Modal Thêm / Sửa Category */}
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
         <Form onSubmit={handleSave}>
           <Modal.Header closeButton>
             <Modal.Title>
               {editingId === null ? "Add Category" : "Edit Category"}
             </Modal.Title>
           </Modal.Header>
-
           <Modal.Body>
-            <Form.Group controlId="categoryName">
-              <Form.Label>Category Name *</Form.Label>
+            <Form.Group className="mb-3">
+              <Form.Label>Category Name</Form.Label>
               <Form.Control
                 type="text"
                 required
+                placeholder="Enter category name"
                 value={categoryName}
                 onChange={(e) => setCategoryName(e.target.value)}
               />
             </Form.Group>
 
-            <br />
-
-            <Form.Group controlId="categoryDescription">
+            <Form.Group className="mb-3">
               <Form.Label>Description</Form.Label>
               <Form.Control
                 as="textarea"
                 rows={3}
+                placeholder="Enter description"
                 value={categoryDescription}
                 onChange={(e) => setCategoryDescription(e.target.value)}
               />
             </Form.Group>
 
-            <br />
-
-            <Form.Group controlId="parentCategoryId">
+            <Form.Group className="mb-3">
               <Form.Label>Parent Category</Form.Label>
               <Form.Select
                 value={parentCategoryId}
                 onChange={(e) => setParentCategoryId(e.target.value)}
               >
-                <option value="">-- Root Category (Không có) --</option>
-                {activeCategories.map((parent) => (
-                  <option key={parent.id} value={parent.id}>
-                    {parent.categoryName}
-                  </option>
-                ))}
+                <option value="">-- Root Category (None) --</option>
+                {activeCategories
+                  .filter((c) => c.id !== editingId)
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.categoryName}
+                    </option>
+                  ))}
               </Form.Select>
             </Form.Group>
 
-            <br />
-
-            <Form.Group controlId="isActive">
+            <Form.Group className="mb-3">
               <Form.Check
                 type="checkbox"
                 label="Active"
@@ -413,10 +368,9 @@ export default function ManageCategory() {
               />
             </Form.Group>
           </Modal.Body>
-
           <Modal.Footer>
             <Button variant="secondary" onClick={() => setShowModal(false)}>
-              Close
+              Cancel
             </Button>
             <Button variant="primary" type="submit">
               Save

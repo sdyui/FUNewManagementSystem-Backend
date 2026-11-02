@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import Card from "react-bootstrap/Card";
 import InputGroup from "react-bootstrap/InputGroup";
-import { useNavigate } from "react-router";
 import axios from "axios";
 import Alert from "react-bootstrap/Alert";
 import { HOME_BY_ROLE } from "./auth";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1/";
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1/";
+
 function Login() {
   const [validated, setValidated] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -16,28 +18,33 @@ function Login() {
   const [accountPassword, setAccountPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
-    setValidated(true); 
+    setValidated(true);
     if (form.checkValidity() === false) {
       return;
     }
-    try{
+    try {
       const res = await axios.post(`${API_BASE_URL}auth/login`, {
         accountName: accountName,
         accountPassword: accountPassword,
       });
       localStorage.setItem("user", JSON.stringify(res.data));
-      navigate(HOME_BY_ROLE[res.data.account.accountRole]||"/news");
-    }catch (error) {
-      if(error.response && error.response.status === 401){
+      if (res.data.accessToken) {
+        localStorage.setItem("accessToken", res.data.accessToken);
+      }
+      navigate(HOME_BY_ROLE[res.data.account?.accountRole] || "/news");
+    } catch (err) {
+      if (err.response && err.response.status === 401) {
         setError("Invalid username or password.");
-      }else{
+      } else {
         setError("An error occurred. Please try again later.");
       }
     }
-  }
+  };
+
   return (
     <div
       className="d-flex justify-content-center align-items-center"
@@ -50,7 +57,6 @@ function Login() {
         <Card.Body className="p-4 p-md-5">
           {/* Header */}
           <div className="text-center mb-4">
-
             <img
               src="/images/logo.png"
               alt="FUNews Logo"

@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -19,13 +20,17 @@ public class ArticleDetailResponse {
     private String thumbnail;
     private String content;
     private ArticleStatus status;
+    private Long categoryId;
+    private String categoryName;
+    private List<Long> tagIds;
+    private List<String> tagNames;
     private AuthorDto author;
 
     @JsonProperty("created_at")
     private LocalDateTime createdAt;
     @JsonProperty("updated_at")
     private LocalDateTime updatedAt;
-    // Định nghĩa AuthorDto ở đây
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

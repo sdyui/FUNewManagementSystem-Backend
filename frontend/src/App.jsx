@@ -23,7 +23,9 @@ function App() {
         <Route path='category' element={<CategoryList/>}/>
         <Route path='contact' element={<Contact />} />
         <Route path='news' element={<NewsList />} />
-       <Route path="news/:id" element={<NewsDetail />} />
+        <Route path="news/:id" element={<NewsDetail />} />
+        <Route path='articles' element={<NewsList />} />
+        <Route path="articles/:id" element={<NewsDetail />} />
       </Route>
       <Route path='login' element={<Login />} />
       <Route path='register' element={<Register />} />
@@ -33,4 +35,3 @@ function App() {
 }
 
 export default App
-

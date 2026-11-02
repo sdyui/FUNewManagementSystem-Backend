@@ -31,9 +31,10 @@ public class SercurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/categories/active", "/api/v1/category/active").authenticated()
                         .requestMatchers("/api/v1/account/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/category/**", "/api/v1/categories/**").hasRole("ADMIN")
-                        .requestMatchers("/articles/**", "/api/v1/articles/**").hasAnyRole("CONTRIBUTOR", "STAFF", "ADMIN")
+                        .requestMatchers("/articles/**", "/api/v1/articles/**").hasAnyRole("CONTRIBUTOR", "STAFF", "EDITOR", "ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint((req, res, ex) -> writeJson(res, 401, "Unauthorized", "Missing or invalid token", req))

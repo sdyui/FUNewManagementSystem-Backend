@@ -1,8 +1,14 @@
-import { Outlet } from "react-router";
+import { Outlet, Navigate } from "react-router";
 import Header from "./Header";
 import Sidebar from "./Sidebars";
 
 export default function Layout() {
+  const userStr = localStorage.getItem("user");
+  const token = localStorage.getItem("accessToken");
+  if (!userStr && !token) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <div className="d-flex flex-column" style={{ minHeight: "100vh" }}>
       {/* Header + Nav */}

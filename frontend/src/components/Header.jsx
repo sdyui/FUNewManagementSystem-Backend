@@ -1,8 +1,32 @@
 import React from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import Nav from "react-bootstrap/Nav";
+import Button from "react-bootstrap/Button";
 
 function Header() {
+  const navigate = useNavigate();
+
+  let currentUserName = "User";
+  const userStr = localStorage.getItem("user");
+  if (userStr) {
+    try {
+      const parsed = JSON.parse(userStr);
+      if (parsed.accountName) {
+        currentUserName = parsed.accountName;
+      } else if (parsed.role) {
+        currentUserName = parsed.role;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("accessToken");
+    navigate("/login");
+  };
+
   return (
     <header className="navbar bg-white border-bottom shadow-sm">
       <div className="container-fluid d-flex justify-content-between align-items-center">
@@ -20,49 +44,28 @@ function Header() {
             />
           </Link>
 
-          {/* Nav links moved up here */}
           <Nav className="gap-2 d-none d-md-flex fw-medium">
-            <Nav.Link as={Link} to="/news">News</Nav.Link>
-            <Nav.Link as={Link} to="/about">About</Nav.Link>
-            <Nav.Link as={Link} to="/contact">Contact</Nav.Link>
-            
-            
+            <Nav.Link as={Link} to="/news">
+              Articles
+            </Nav.Link>
+            <Nav.Link as={Link} to="/category">
+              Category
+            </Nav.Link>
+            <Nav.Link as={Link} to="/about">
+              About
+            </Nav.Link>
+            <Nav.Link as={Link} to="/contact">
+              Contact
+            </Nav.Link>
           </Nav>
         </div>
 
-        {/* Right side: Admin dropdown */}
-        <div className="dropdown">
-          <button
-            className="btn btn-light dropdown-toggle d-flex align-items-center gap-2"
-            type="button"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-          >
-            <div
-              className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
-              style={{ width: "36px", height: "36px" }}
-            >
-              A
-            </div>
-            <span>Admin</span>
-          </button>
-          <ul className="dropdown-menu dropdown-menu-end">
-            <li>
-              <h6 className="dropdown-header">Admin Account</h6>
-            </li>
-            <li>
-              <button className="dropdown-item">Profile</button>
-            </li>
-            <li>
-              <button className="dropdown-item">Settings</button>
-            </li>
-            <li>
-              <hr className="dropdown-divider" />
-            </li>
-            <li>
-              <button className="dropdown-item text-danger">Logout</button>
-            </li>
-          </ul>
+        {/* Right side: Account info + Logout button */}
+        <div className="d-flex align-items-center gap-3">
+          <span className="fw-semibold text-secondary">{currentUserName}</span>
+          <Button variant="outline-danger" size="sm" onClick={handleLogout}>
+            Logout
+          </Button>
         </div>
       </div>
     </header>

@@ -17,6 +17,8 @@ const ARTICLE_API = `${API_BASE_URL}articles`;
 export default function NewsDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [news, setNews] = useState(null);
+  const [status, setStatus] = useState("loading");
 
   const [article, setArticle] = useState(null);
   const [message, setMessage] = useState("");

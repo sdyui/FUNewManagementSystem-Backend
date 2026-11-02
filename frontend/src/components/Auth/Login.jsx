@@ -7,7 +7,8 @@ import InputGroup from "react-bootstrap/InputGroup";
 import { useNavigate } from "react-router";
 import axios from "axios";
 import Alert from "react-bootstrap/Alert";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { HOME_BY_ROLE } from "./auth";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1/";
 function Login() {
   const [validated, setValidated] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -28,7 +29,7 @@ function Login() {
         accountPassword: accountPassword,
       });
       localStorage.setItem("user", JSON.stringify(res.data));
-      navigate("/dashboard");
+      navigate(HOME_BY_ROLE[res.data.account.accountRole]||"/news");
     }catch (error) {
       if(error.response && error.response.status === 401){
         setError("Invalid username or password.");
@@ -95,7 +96,6 @@ function Login() {
                   required
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
-                  minLength={6}
                   value={accountPassword}
                   onChange={(e) => setAccountPassword(e.target.value)}
                 />
@@ -107,7 +107,7 @@ function Login() {
                   {showPassword ? "🙈" : "👁"}
                 </Button>
                 <Form.Control.Feedback type="invalid">
-                  Password must be at least 6 characters.
+                  Please enter your password.
                 </Form.Control.Feedback>
               </InputGroup>
             </Form.Group>

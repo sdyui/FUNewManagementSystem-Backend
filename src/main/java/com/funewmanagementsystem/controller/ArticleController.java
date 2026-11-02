@@ -5,6 +5,7 @@ import com.funewmanagementsystem.dto.request.UpdateArticleRequest;
 import com.funewmanagementsystem.dto.respone.ArticleDetailResponse;
 import com.funewmanagementsystem.dto.respone.PageResponse;
 import com.funewmanagementsystem.dto.respone.SubmitArticleResponse;
+import com.funewmanagementsystem.dto.respone.TagResponse;
 import com.funewmanagementsystem.entity.ArticleStatus;
 import com.funewmanagementsystem.service.ArticleService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +18,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping({"/articles", "/api/v1/articles"})
@@ -74,6 +77,11 @@ public class ArticleController {
     public ResponseEntity<SubmitArticleResponse> submitArticle(@PathVariable Long id) {
         SubmitArticleResponse response = articleService.submitForReview(id);
         return ResponseEntity.ok(response);
+    }
+    @Operation(summary = "Get all tags (for the article form)")
+    @GetMapping("/tags")
+    public ResponseEntity<List<TagResponse>> getAllTags() {
+        return ResponseEntity.ok(articleService.getAllTags());
     }
 }
 

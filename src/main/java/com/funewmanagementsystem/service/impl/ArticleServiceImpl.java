@@ -5,15 +5,12 @@ import com.funewmanagementsystem.dto.request.UpdateArticleRequest;
 import com.funewmanagementsystem.dto.respone.ArticleDetailResponse;
 import com.funewmanagementsystem.dto.respone.PageResponse;
 import com.funewmanagementsystem.dto.respone.SubmitArticleResponse;
-import com.funewmanagementsystem.entity.AccountRole;
-import com.funewmanagementsystem.entity.ArticleStatus;
-import com.funewmanagementsystem.entity.Category;
-import com.funewmanagementsystem.entity.NewsArticle;
-import com.funewmanagementsystem.entity.SystemAccount;
-import com.funewmanagementsystem.entity.Tag;
+import com.funewmanagementsystem.dto.respone.TagResponse;
+import com.funewmanagementsystem.entity.*;
 import com.funewmanagementsystem.exception.ForbiddenException;
 import com.funewmanagementsystem.exception.InvalidRequestException;
 import com.funewmanagementsystem.exception.ResourceNotFoundException;
+import com.funewmanagementsystem.repository.ArticleWorkflowLogRepository;
 import com.funewmanagementsystem.repository.CategoryRepository;
 import com.funewmanagementsystem.repository.NewsArticleRepository;
 import com.funewmanagementsystem.repository.TagRepository;
@@ -23,6 +20,7 @@ import com.funewmanagementsystem.service.ArticleWorkFlowService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -42,7 +41,7 @@ public class ArticleServiceImpl implements ArticleService {
     private final TagRepository tagRepository;
     private final CurrentUserService currentUserService;
     private final ArticleWorkFlowService articleWorkFlowService;
-
+    private final ArticleWorkflowLogRepository articleWorkflowLogRepository;
     /**
      * Chức năng 1: Tạo bài viết mới dành cho Contributor
      * Quy tắc 1 & 2: Trạng thái ban đầu luôn là DRAFT, tác giả là tài khoản đang đăng nhập.
@@ -220,32 +219,32 @@ public class ArticleServiceImpl implements ArticleService {
         NewsArticle article = articleOpt.get();
 
         if (!article.getCreatedBy().getId().equals(currentAuthor.getId())) {
-            throw new ForbiddenException("Bạn chỉ có thể gửi xét duyệt bài viết của chính mình!");
+            throw new ForbiddenException("You can only submit your own articles for review");
         }
 
         if (article.getNewsTitle() == null || article.getNewsTitle().trim().isEmpty()) {
-            throw new InvalidRequestException("Không thể gửi xét duyệt: Tiêu đề bài viết không được để trống!");
+            throw new InvalidRequestException("Cannot submit for review: title must not be empty");
         }
         if (article.getNewsContent() == null || article.getNewsContent().trim().isEmpty()) {
-            throw new InvalidRequestException("Không thể gửi xét duyệt: Nội dung bài viết không được để trống!");
+            throw new InvalidRequestException("Cannot submit for review: content must not be empty");
         }
 
         ArticleStatus currentStatus = article.getArticleStatus();
         if (currentStatus != ArticleStatus.DRAFT && currentStatus != ArticleStatus.CHANGES_REQUESTED) {
-            throw new InvalidRequestException("Chỉ được gửi xét duyệt khi bài viết ở trạng thái DRAFT hoặc CHANGES_REQUESTED. Trạng thái hiện tại: " + currentStatus);
+            throw new InvalidRequestException("Only DRAFT or CHANGES_REQUESTED articles can be submitted for review. Current status: " + currentStatus);
         }
 
         NewsArticle transitionedArticle = articleWorkFlowService.transition(
                 article,
                 ArticleStatus.PENDING_REVIEW,
                 currentAuthor,
-                "Tác giả gửi bài viết để xét duyệt"
+                "Submitted for review by author"
         );
 
         return new SubmitArticleResponse(
                 transitionedArticle.getId(),
                 transitionedArticle.getArticleStatus(),
-                "Bài viết đã được gửi xét duyệt thành công!"
+                "Article submitted for review successfully"
         );
     }
 
@@ -284,5 +283,16 @@ public class ArticleServiceImpl implements ArticleService {
         }
 
         return response;
+    }
+    private String findLatestFeedback(NewsArticle article) {
+        ArticleStatus status = article.getArticleStatus();
+        if (status != ArticleStatus.CHANGES_REQUESTED && status != ArticleStatus.ARCHIVED) {
+            return null;
+        }
+        return articleWorkflowLogRepository
+                .findFirstByArticleIdAndToStatusInAndNoteIsNotNullOrderByActionAtDescIdDesc(
+                        article.getId(), List.of(ArticleStatus.CHANGES_REQUESTED, ArticleStatus.ARCHIVED))
+                .map(ArticleWorkflowLog::getNote)
+                .orElse(null);
     }
 }

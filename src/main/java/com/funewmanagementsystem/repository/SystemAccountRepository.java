@@ -1,5 +1,6 @@
 package com.funewmanagementsystem.repository;
 
+import com.funewmanagementsystem.entity.AccountRole;
 import com.funewmanagementsystem.entity.SystemAccount;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,5 +25,5 @@ public interface SystemAccountRepository extends JpaRepository<SystemAccount,Lon
     Page<SystemAccount> search(@Param("name") String name,
                                @Param("email") String email,
                                Pageable pageable);
-
+    long countByAccountRole(AccountRole accountRole);
 }

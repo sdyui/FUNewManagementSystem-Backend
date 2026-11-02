@@ -1,30 +1,16 @@
 import React from "react";
 import { Link, useNavigate } from "react-router";
 import Nav from "react-bootstrap/Nav";
-import Button from "react-bootstrap/Button";
-
+import { getUser } from "./Auth/auth";
 function Header() {
+  const account = getUser()?.account;
+  const initial = account?.accountName?.charAt(0).toUpperCase() || "?";
   const navigate = useNavigate();
-
-  let currentUserName = "User";
-  const userStr = localStorage.getItem("user");
-  if (userStr) {
-    try {
-      const parsed = JSON.parse(userStr);
-      if (parsed.accountName) {
-        currentUserName = parsed.accountName;
-      } else if (parsed.role) {
-        currentUserName = parsed.role;
-      }
-    } catch {
-      // ignore
-    }
-  }
 
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("accessToken");
-    navigate("/login");
+    navigate("/");
   };
 
   return (
@@ -46,10 +32,7 @@ function Header() {
 
           <Nav className="gap-2 d-none d-md-flex fw-medium">
             <Nav.Link as={Link} to="/news">
-              Articles
-            </Nav.Link>
-            <Nav.Link as={Link} to="/category">
-              Category
+              News
             </Nav.Link>
             <Nav.Link as={Link} to="/about">
               About
@@ -60,12 +43,47 @@ function Header() {
           </Nav>
         </div>
 
-        {/* Right side: Account info + Logout button */}
-        <div className="d-flex align-items-center gap-3">
-          <span className="fw-semibold text-secondary">{currentUserName}</span>
-          <Button variant="outline-danger" size="sm" onClick={handleLogout}>
-            Logout
-          </Button>
+        {/* Right side: Admin dropdown */}
+        <div className="dropdown">
+          <button
+            className="btn btn-light dropdown-toggle d-flex align-items-center gap-2"
+            type="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            <div
+              className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+              style={{ width: "36px", height: "36px" }}
+            >
+              {initial}
+            </div>
+            <span>{account?.accountName}</span>
+          </button>
+          <ul className="dropdown-menu dropdown-menu-end">
+            <li>
+              <h6 className="dropdown-header">
+                {account?.email}
+                <div className="small text-muted">{account?.accountRole}</div>
+              </h6>
+            </li>
+            <li>
+              <button className="dropdown-item">Profile</button>
+            </li>
+            <li>
+              <button className="dropdown-item">Settings</button>
+            </li>
+            <li>
+              <hr className="dropdown-divider" />
+            </li>
+            <li>
+              <button
+                className="dropdown-item text-danger"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+            </li>
+          </ul>
         </div>
       </div>
     </header>

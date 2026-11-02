@@ -10,6 +10,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
 @Repository
 public interface NewsArticleRepository extends JpaRepository<NewsArticle,Long> {
     @Query("""
@@ -27,11 +31,26 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle,Long> {
         SELECT a FROM NewsArticle a 
         WHERE a.createdBy.id = :authorId 
         AND (:status IS NULL OR a.articleStatus = :status)
-        ORDER BY a.createdDate DESC
+        
     """)
     Page<NewsArticle> findMyArticles(
             @Param("authorId") Long authorId,
             @Param("status") ArticleStatus status,
             Pageable pageable
     );
+
+    Page<NewsArticle> findByArticleStatus(ArticleStatus status, Pageable pageable);
+
+    // Scheduler: các bài SCHEDULED đã đến giờ đăng
+    List<NewsArticle> findByArticleStatusAndPublishDateLessThanEqual(ArticleStatus status, LocalDateTime time);
+
+    @Query("""
+    Select a from NewsArticle a where a.articleStatus = :status and (:title is null or lower(a.newsTitle) like lower(concat('%',:title, '%') ) )
+    and (:categoryId is null or a.category.id = :categoryId)
+""")
+    Page<NewsArticle> searchByStatus(@Param("status") ArticleStatus status,
+                                     @Param("title") String tilte,
+                                     @Param("categoryId") Long categoryId,
+                                     Pageable pageable);
+    Optional<NewsArticle> findByIdAndArticleStatus(Long id, ArticleStatus status);
 }

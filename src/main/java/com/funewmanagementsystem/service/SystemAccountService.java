@@ -6,6 +6,7 @@ import com.funewmanagementsystem.dto.request.UpdateAccount;
 import com.funewmanagementsystem.dto.respone.LoginResponse;
 import com.funewmanagementsystem.dto.respone.PageResponse;
 import com.funewmanagementsystem.dto.respone.SystemAccountResponse;
+import com.funewmanagementsystem.entity.AccountRole;
 import com.funewmanagementsystem.entity.SystemAccount;
 import org.springframework.data.domain.Pageable;
 
@@ -19,4 +20,5 @@ public interface SystemAccountService {
    void deleteAccount(Long id);
    SystemAccountResponse save(Long id,UpdateAccount updateAccount);
    Optional<SystemAccount> findById(Long id);
+   SystemAccountResponse changeRole(Long id, AccountRole newRole);
 }

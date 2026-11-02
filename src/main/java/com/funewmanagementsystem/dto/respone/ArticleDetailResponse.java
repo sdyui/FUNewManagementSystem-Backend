@@ -25,7 +25,9 @@ public class ArticleDetailResponse {
     private List<Long> tagIds;
     private List<String> tagNames;
     private AuthorDto author;
-
+    private Long categoryId;
+    private String categoryName;
+    private Set<Long> tagIds;
     @JsonProperty("created_at")
     private LocalDateTime createdAt;
     @JsonProperty("updated_at")

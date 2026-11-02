@@ -1,8 +1,18 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
-import api from "../api/axiosClient";
-import { Container, Button, Badge, Spinner } from "react-bootstrap";
-import NotFound from "./NotFound";
+import {
+  Container,
+  Card,
+  Button,
+  Badge,
+  Alert,
+  Row,
+  Col,
+} from "react-bootstrap";
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1/";
+const ARTICLE_API = `${API_BASE_URL}articles`;
 
 export default function NewsDetail() {
   const { id } = useParams();
@@ -10,65 +20,191 @@ export default function NewsDetail() {
   const [news, setNews] = useState(null);
   const [status, setStatus] = useState("loading");
 
+  const [article, setArticle] = useState(null);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  const getHeaders = () => {
+    let token = localStorage.getItem("accessToken");
+    const userStr = localStorage.getItem("user");
+    if (!token && userStr) {
+      try {
+        const userObj = JSON.parse(userStr);
+        token = userObj.accessToken || userObj.token;
+      } catch {
+        // ignore
+      }
+    }
+    const headers = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    return headers;
+  };
+
+  // Lấy chi tiết bài viết theo ID (GET /api/v1/articles/{id})
+  const fetchArticleDetail = async () => {
+    setError("");
+    try {
+      const response = await fetch(`${ARTICLE_API}/${id}`, {
+        headers: getHeaders(),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setArticle(data);
+      } else {
+        setError(data.message || "Không tìm thấy bài viết.");
+      }
+    } catch {
+      setError("Không thể kết nối tới máy chủ Backend.");
+    }
+  };
+
   useEffect(() => {
-    setStatus("loading");
-    api
-      .get(`public/news/${id}`)
-      .then((res) => {
-        setNews(res.data);
-        setStatus("ok");
-      })
-      .catch(() => setStatus("notfound"));
+    fetchArticleDetail();
   }, [id]);
-  if (status === "loading") {
-    return (
-      <div className="text-center py-5">
-        <Spinner animation="border" />
-      </div>
+
+  // Gửi bài viết để xét duyệt ngay từ trang chi tiết (PUT /api/v1/articles/{id}/submit)
+  const handleSubmitForReview = async () => {
+    const confirmSubmit = window.confirm(
+      "Bạn có chắc chắn muốn gửi bài viết này để xét duyệt?"
     );
-  }
-  if (status === "notfound") {
-    return <NotFound />;
-  }
+    if (!confirmSubmit) {
+      return;
+    }
+
+    setError("");
+    setMessage("");
+
+    try {
+      const response = await fetch(`${ARTICLE_API}/${id}/submit`, {
+        method: "PUT",
+        headers: getHeaders(),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setMessage(data.message || "Đã gửi xét duyệt thành công!");
+        fetchArticleDetail();
+      } else {
+        setError(data.message || "Không thể gửi xét duyệt.");
+      }
+    } catch {
+      setError("Lỗi kết nối tới máy chủ Backend.");
+    }
+  };
+
+  const renderStatusBadge = (status) => {
+    if (status === "DRAFT") {
+      return <Badge bg="secondary">DRAFT</Badge>;
+    }
+    if (status === "PENDING_REVIEW") {
+      return <Badge bg="warning" text="dark">PENDING_REVIEW</Badge>;
+    }
+    if (status === "CHANGES_REQUESTED") {
+      return <Badge bg="danger">CHANGES_REQUESTED</Badge>;
+    }
+    if (status === "APPROVED") {
+      return <Badge bg="info">APPROVED</Badge>;
+    }
+    if (status === "PUBLISHED") {
+      return <Badge bg="success">PUBLISHED</Badge>;
+    }
+    if (status === "REJECTED") {
+      return <Badge bg="dark">REJECTED</Badge>;
+    }
+    return <Badge bg="secondary">{status}</Badge>;
+  };
+
+  const canSubmit =
+    article &&
+    (article.status === "DRAFT" || article.status === "CHANGES_REQUESTED");
+
   return (
-    <Container className="py-4 text-start" style={{ maxWidth: 820 }}>
-      <Button variant="link" className="px-0 mb-3" onClick={() => navigate(-1)}>
-        ← Back
-      </Button>
+    <Container className="mt-4">
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <Button variant="secondary" onClick={() => navigate("/news")}>
+          ← Back to Articles
+        </Button>
 
-      {news.categoryName && (
-        <Badge bg="primary" className="mb-2">
-          {news.categoryName}
-        </Badge>
-      )}
-      <h1 className="fw-bold">{news.title}</h1>
-
-      <div className="text-muted mb-3">
-        {news.authorName && (
-          <>
-            By <strong>{news.authorName}</strong> ·{" "}
-          </>
+        {canSubmit && (
+          <Button variant="primary" onClick={handleSubmitForReview}>
+            Submit for Review
+          </Button>
         )}
-        {news.publishDate ? new Date(news.publishDate).toLocaleString() : ""}
       </div>
 
-      {news.headline && <h5 className="text-secondary">{news.headline}</h5>}
-
-      {news.thumbnail && (
-        <img src={news.thumbnail} alt="" className="img-fluid rounded my-3" />
+      {message && (
+        <Alert variant="success" onClose={() => setMessage("")} dismissible>
+          {message}
+        </Alert>
+      )}
+      {error && (
+        <Alert variant="danger" onClose={() => setError("")} dismissible>
+          {error}
+        </Alert>
       )}
 
-      <hr />
+      {article && (
+        <Card>
+          <Card.Header className="d-flex justify-content-between align-items-center">
+            <span>Article ID: #{article.id}</span>
+            {renderStatusBadge(article.status)}
+          </Card.Header>
+          <Card.Body>
+            <Card.Title className="fs-3 mb-3">{article.title}</Card.Title>
 
-      {/* Hiển thị dạng text thường: React tự escape, tránh XSS */}
-      <div style={{ whiteSpace: "pre-line", lineHeight: 1.8 }}>
-        {news.content}
-      </div>
+            <Row className="mb-3 text-muted small">
+              <Col md={4}>
+                <strong>Author:</strong>{" "}
+                {article.author
+                  ? `${article.author.name} (${article.author.email})`
+                  : "N/A"}
+              </Col>
+              <Col md={4}>
+                <strong>Category:</strong> {article.categoryName || "N/A"}
+              </Col>
+              <Col md={4}>
+                <strong>Created At:</strong>{" "}
+                {article.created_at
+                  ? new Date(article.created_at).toLocaleString()
+                  : "N/A"}
+              </Col>
+            </Row>
 
-      {news.newsSource && (
-        <div className="mt-4 p-3 bg-light rounded">
-          <strong>Source:</strong> {news.newsSource}
-        </div>
+            {article.tagNames && article.tagNames.length > 0 && (
+              <div className="mb-3">
+                <strong>Tags: </strong>
+                {article.tagNames.map((t, idx) => (
+                  <Badge bg="info" className="me-1" key={idx}>
+                    {t}
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            {article.thumbnail && (
+              <div className="mb-3">
+                <strong>Thumbnail: </strong>
+                <a href={article.thumbnail} target="_blank" rel="noreferrer">
+                  {article.thumbnail}
+                </a>
+              </div>
+            )}
+
+            <hr />
+
+            <Card.Text style={{ whiteSpace: "pre-line" }}>
+              {article.content || "(Chưa có nội dung)"}
+            </Card.Text>
+          </Card.Body>
+          {article.updated_at && (
+            <Card.Footer className="text-muted small">
+              Last updated: {new Date(article.updated_at).toLocaleString()}
+            </Card.Footer>
+          )}
+        </Card>
       )}
     </Container>
   );

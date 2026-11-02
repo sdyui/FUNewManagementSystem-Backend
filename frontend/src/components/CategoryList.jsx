@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 import {
   Container,
+  Accordion,
   Table,
   Button,
   Form,
   Modal,
   Badge,
   Alert,
+  Row,
+  Col,
   Accordion,
 } from "react-bootstrap";
 
@@ -14,6 +17,16 @@ const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1/";
 const CATEGORY_API = `${API_BASE_URL}categories`;
 
+export default function CategoryList() {
+  // State lưu danh sách category hiển thị trên bảng
+  const [categories, setCategories] = useState([]);
+  // State lưu danh sách category đang hoạt động (để chọn Parent Category)
+  const [activeCategories, setActiveCategories] = useState([]);
+
+  // State cho ô tìm kiếm
+  const [searchName, setSearchName] = useState("");
+
+  // State cho Modal Thêm / Sửa
 export default function ManageCategory() {
   // 1. State danh sách Category
   const [categories, setCategories] = useState([]);
@@ -30,6 +43,54 @@ export default function ManageCategory() {
   const [parentCategoryId, setParentCategoryId] = useState("");
   const [isActive, setIsActive] = useState(true);
 
+  // State hiển thị thông báo thành công / lỗi
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  // Hàm lấy Header có kèm JWT Token từ localStorage
+  const getHeaders = () => {
+    let token = localStorage.getItem("accessToken");
+    const userStr = localStorage.getItem("user");
+    if (!token && userStr) {
+      try {
+        const userObj = JSON.parse(userStr);
+        token = userObj.accessToken || userObj.token;
+      } catch {
+        // ignore JSON parse error
+      }
+    }
+    const headers = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    return headers;
+  };
+
+  // 1. Lấy danh sách Category từ Backend (hỗ trợ tìm kiếm theo tên)
+  const fetchCategories = async () => {
+    setError("");
+    try {
+      let url = `${CATEGORY_API}?size=50`;
+      if (searchName.trim() !== "") {
+        url += `&name=${encodeURIComponent(searchName.trim())}`;
+      }
+      const response = await fetch(url, {
+        headers: getHeaders(),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setCategories(data.content || []);
+      } else {
+        setError(data.message || "Failed to load categories.");
+      }
+    } catch {
+      setError("Cannot connect to Backend server.");
+    }
+  };
+
+  // 2. Lấy danh sách Category đang active để làm dropdown chọn danh mục cha
   // 4. State hiển thị thông báo
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -242,12 +303,12 @@ export default function ManageCategory() {
         <thead>
           <tr>
             <th>#</th>
-            <th>Category ID</th>
+            <th>ID</th>
             <th>Category Name</th>
             <th>Description</th>
             <th>Parent Category</th>
             <th>Status</th>
-            <th>Action</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>

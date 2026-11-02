@@ -21,6 +21,16 @@ import ReviewArticle from "./pages/ReviewArticle";
 function App() {
   return (
     <Routes>
+      <Route path='/' element={<Layout />}>
+        <Route index element={<Home />} />
+        <Route path="users" element={<AccountList />} />
+        <Route path='about' element={<About />} />
+        <Route path='category' element={<CategoryList/>}/>
+        <Route path='contact' element={<Contact />} />
+        <Route path='news' element={<NewsList />} />
+        <Route path="news/:id" element={<NewsDetail />} />
+        <Route path='articles' element={<NewsList />} />
+        <Route path="articles/:id" element={<NewsDetail />} />
       {/*customer*/ }
       <Route index element={<Home />} />
       <Route path="news/:id" element={<NewsDetail />} />

@@ -30,7 +30,6 @@ function Header() {
             />
           </Link>
 
-          {/* Nav links moved up here */}
           <Nav className="gap-2 d-none d-md-flex fw-medium">
             <Nav.Link as={Link} to="/news">
               News

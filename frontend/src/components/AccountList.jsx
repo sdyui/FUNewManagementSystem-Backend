@@ -11,7 +11,7 @@ export default function ManageAccount() {
   const [error, setError] = useState("");
   const myId = getUser()?.account?.accountId; // không cho tự đổi role của mình
 
-  const ROLES = ["STAFF", "EDITOR", "ADMIN"];
+  const ROLES = ["STAFF", "EDITOR", "ADMIN","CONTRIBUTOR"];
 
   const handleRoleChange = async (item, newRole) => {
     if (newRole === item.accountRole) return;

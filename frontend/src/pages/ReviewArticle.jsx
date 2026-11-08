@@ -21,7 +21,7 @@ const ACTIONS = {
 const ACTIONS_BY_STATUS = {
   PENDING_REVIEW: ["approve", "request-changes", "reject"],
   SCHEDULED: ["publish", "request-changes", "archive"],
-  PUBLISHED: ["archive"],
+  PUBLISHED: ["request-changes","archive"],
 };
 
 // Giá trị cho <input type="datetime-local">: "YYYY-MM-DDTHH:mm" theo giờ máy

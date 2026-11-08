@@ -2,8 +2,10 @@ package com.funewmanagementsystem.controller;
 
 import com.funewmanagementsystem.dto.request.ReviewRequest;
 import com.funewmanagementsystem.dto.respone.ArticleDetailResponse;
+import com.funewmanagementsystem.dto.respone.AuditLogResponse;
 import com.funewmanagementsystem.dto.respone.PageResponse;
 import com.funewmanagementsystem.dto.respone.WorkflowLogResponse;
+import com.funewmanagementsystem.entity.ArticleStatus;
 import com.funewmanagementsystem.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,9 +14,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -62,5 +66,16 @@ public class ReviewController {
     public ResponseEntity<ArticleDetailResponse> archive(@PathVariable long id,
                                                          @Valid @RequestBody(required = false) ReviewRequest request) {
         return ResponseEntity.ok(reviewService.archive(id, request == null ? null : request.getNote()));
+    }
+    @GetMapping("/logs")
+    public ResponseEntity<PageResponse<AuditLogResponse>> logs(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String actor,
+            @RequestParam(required = false) ArticleStatus toStatus,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @ParameterObject
+            @PageableDefault(size = 20, sort = {"actionAt", "id"}, direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(reviewService.searchLogs(keyword, actor,from ,to, pageable, toStatus));
     }
 }

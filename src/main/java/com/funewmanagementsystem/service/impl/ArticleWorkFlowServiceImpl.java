@@ -25,7 +25,7 @@ public class ArticleWorkFlowServiceImpl implements ArticleWorkFlowService {
             PENDING_REVIEW,    Set.of(CHANGES_REQUESTED, SCHEDULED, PUBLISHED, ARCHIVED),
             CHANGES_REQUESTED, Set.of(PENDING_REVIEW, ARCHIVED),
             SCHEDULED,         Set.of(PUBLISHED, CHANGES_REQUESTED, ARCHIVED),
-            PUBLISHED,         Set.of(ARCHIVED),
+            PUBLISHED,         Set.of(ARCHIVED,CHANGES_REQUESTED),
             ARCHIVED,          Set.of(DRAFT));
 
     private final NewsArticleRepository newsArticleRepository;

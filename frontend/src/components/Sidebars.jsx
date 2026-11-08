@@ -9,6 +9,7 @@ const MENUS = {
     { to: "/news", label: "Articles" },
     { to: "/category", label: "Category" },
     { to: "/review", label: "Review Queue" },
+     { to: "/audit-logs", label: "Audit Logs" },
     { to: "/users", label: "Users" },
   ],
   EDITOR: [

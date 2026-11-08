@@ -1,4 +1,3 @@
-import React from "react";
 import { Link, useNavigate } from "react-router";
 import Nav from "react-bootstrap/Nav";
 import { getUser } from "./Auth/auth";
@@ -9,7 +8,6 @@ function Header() {
 
   const handleLogout = () => {
     localStorage.removeItem("user");
-    localStorage.removeItem("accessToken");
     navigate("/");
   };
 
@@ -31,7 +29,7 @@ function Header() {
           </Link>
 
           <Nav className="gap-2 d-none d-md-flex fw-medium">
-            <Nav.Link as={Link} to="/news">
+            <Nav.Link as={Link} to="/">
               News
             </Nav.Link>
             <Nav.Link as={Link} to="/about">
@@ -44,47 +42,53 @@ function Header() {
         </div>
 
         {/* Right side: Admin dropdown */}
-        <div className="dropdown">
-          <button
-            className="btn btn-light dropdown-toggle d-flex align-items-center gap-2"
-            type="button"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-          >
-            <div
-              className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
-              style={{ width: "36px", height: "36px" }}
+        {!account ? (
+          <Link to="/login" className="btn btn-primary">
+            Login
+          </Link>
+        ) : (
+          <div className="dropdown">
+            <button
+              className="btn btn-light dropdown-toggle d-flex align-items-center gap-2"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
             >
-              {initial}
-            </div>
-            <span>{account?.accountName}</span>
-          </button>
-          <ul className="dropdown-menu dropdown-menu-end">
-            <li>
-              <h6 className="dropdown-header">
-                {account?.email}
-                <div className="small text-muted">{account?.accountRole}</div>
-              </h6>
-            </li>
-            <li>
-              <button className="dropdown-item">Profile</button>
-            </li>
-            <li>
-              <button className="dropdown-item">Settings</button>
-            </li>
-            <li>
-              <hr className="dropdown-divider" />
-            </li>
-            <li>
-              <button
-                className="dropdown-item text-danger"
-                onClick={handleLogout}
+              <div
+                className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                style={{ width: "36px", height: "36px" }}
               >
-                Logout
-              </button>
-            </li>
-          </ul>
-        </div>
+                {initial}
+              </div>
+              <span>{account?.accountName}</span>
+            </button>
+            <ul className="dropdown-menu dropdown-menu-end">
+              <li>
+                <h6 className="dropdown-header">
+                  {account?.email}
+                  <div className="small text-muted">{account?.accountRole}</div>
+                </h6>
+              </li>
+              <li>
+                <button className="dropdown-item">Profile</button>
+              </li>
+              <li>
+                <button className="dropdown-item">Settings</button>
+              </li>
+              <li>
+                <hr className="dropdown-divider" />
+              </li>
+              <li>
+                <button
+                  className="dropdown-item text-danger"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </button>
+              </li>
+            </ul>
+          </div>
+        )}
       </div>
     </header>
   );

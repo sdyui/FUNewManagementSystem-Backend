@@ -12,7 +12,6 @@ import {
   Alert,
 } from "react-bootstrap";
 import api, { getErrorMessage } from "../api/axiosClient";
-import { getUser, getRole, HOME_BY_ROLE } from "../components/Auth/auth";
 
 const PAGE_SIZE = 9;
 
@@ -24,8 +23,6 @@ export default function Home() {
   const [title, setTitle] = useState(""); // từ khóa đã bấm Search
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  const user = getUser();
 
   // Gọi API mỗi khi đổi trang hoặc đổi từ khóa
   useEffect(() => {
@@ -59,24 +56,8 @@ export default function Home() {
   };
 
   return (
-    <Container className="py-4">
-      {/* Logo + nút Login / Dashboard */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <img src="/images/logo.png" alt="FU News" style={{ height: 56 }} />
-        {user ? (
-          <Button
-            as={Link}
-            to={HOME_BY_ROLE[getRole()] || "/news"}
-            variant="outline-primary"
-          >
-            Dashboard
-          </Button>
-        ) : (
-          <Button as={Link} to="/login">
-            Login
-          </Button>
-        )}
-      </div>
+    <Container className="py-2">
+      <h3 className="mb-3">Latest news</h3>
 
       {/* Ô search */}
       <Form onSubmit={handleSearch} className="mb-4">
@@ -130,7 +111,7 @@ export default function Home() {
                     </small>
                     <Button
                       as={Link}
-                      to={`/news/${n.id}`}
+                      to={`/post/${n.id}`}
                       size="sm"
                       variant="outline-primary"
                     >

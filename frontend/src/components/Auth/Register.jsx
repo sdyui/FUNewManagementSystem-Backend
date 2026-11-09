@@ -1,13 +1,12 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router";
+import { useState } from "react";
+import { useNavigate, Link } from "react-router";
 import axios from "axios";
-import { Form, Button, InputGroup } from "react-bootstrap";
-import { Link } from "react-router";
+import { Form, Button, Card } from "react-bootstrap";
 import Alert from "react-bootstrap/Alert";
-import { Card } from "react-bootstrap";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 function Register() {
-  const [validated, setValidated] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -17,15 +16,14 @@ function Register() {
     accountConfirmPassword: "",
   });
   const navigate = useNavigate();
+
   const handleChange = (e) => {
     setForm({
       ...form,
       [e.target.name]: e.target.value,
     });
   };
-  const passwordsMismatch =
-    form.accountConfirmPassword !== "" &&
-    form.accountConfirmPassword !== form.accountPassword;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -41,20 +39,21 @@ function Register() {
         accountPassword: form.accountPassword,
         comfirmAccountPassword: form.accountConfirmPassword,
       });
-      navigate("/login");
-    } catch (error) {
-      if (error.response && error.response.status === 400) {
+      void navigate("/login");
+    } catch (err) {
+      if (err.response?.status === 400) {
         setError("Account name or email already exists.");
       } else {
         setError(
-          error.response?.data?.message ||
-            "An error occurred. Please try again later.",
+          err.response?.data?.message ||
+            "An error occurred. Please try again later."
         );
       }
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <div
       className="d-flex justify-content-center align-items-center"
@@ -66,7 +65,7 @@ function Register() {
       >
         <Card.Body className="p-4">
           <Card.Title className="text-center mb-4">Register</Card.Title>
-          <Form onSubmit={handleSubmit}>
+          <Form onSubmit={(e) => void handleSubmit(e)}>
             <Form.Group className="mb-3">
               <Form.Label>Account Name</Form.Label>
               <Form.Control
@@ -92,7 +91,7 @@ function Register() {
               <Form.Control
                 type="password"
                 name="accountPassword"
-                minLength={6} // sửa
+                minLength={6}
                 value={form.accountPassword}
                 onChange={handleChange}
                 required
@@ -109,14 +108,12 @@ function Register() {
               />
             </Form.Group>
 
-            {/* sửa: dùng Alert của react-bootstrap */}
             {error && (
               <Alert variant="danger" dismissible onClose={() => setError("")}>
                 {error}
               </Alert>
             )}
 
-            {/* sửa: w-100 cho nút full width */}
             <Button
               variant="primary"
               type="submit"

@@ -35,9 +35,9 @@ function Login() {
       if (res.data.accessToken) {
         localStorage.setItem("accessToken", res.data.accessToken);
       }
-      navigate(HOME_BY_ROLE[res.data.account?.accountRole] || "/news");
+      void navigate(HOME_BY_ROLE[res.data.account?.accountRole] || "/news");
     } catch (err) {
-      if (err.response && err.response.status === 401) {
+      if (err.response?.status === 401) {
         setError("Invalid username or password.");
       } else {
         setError("An error occurred. Please try again later.");
@@ -72,7 +72,7 @@ function Login() {
           )}
 
           {/* Form */}
-          <Form noValidate validated={validated} onSubmit={handleSubmit}>
+          <Form noValidate validated={validated} onSubmit={(e) => void handleSubmit(e)}>
             <Form.Group className="mb-3" controlId="loginName">
               <Form.Label>Account Name</Form.Label>
               <InputGroup hasValidation>

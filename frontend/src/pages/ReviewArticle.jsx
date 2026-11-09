@@ -10,11 +10,11 @@ const formatDate = (d) => (d ? new Date(d).toLocaleString() : "—");
 
 // Các thao tác của editor. noteRequired khớp với requireNote() ở backend
 const ACTIONS = {
-  approve:          { label: "Approve",         variant: "success",           path: "approve" },
-  publish:          { label: "Publish now",     variant: "primary",           path: "publish" },
-  "request-changes":{ label: "Request changes", variant: "warning",           path: "request-changes", noteRequired: true },
-  reject:           { label: "Reject",          variant: "danger",            path: "reject",          noteRequired: true },
-  archive:          { label: "Archive",         variant: "outline-dark",      path: "archive" },
+  approve:           { label: "Approve",         variant: "success",      path: "approve" },
+  publish:           { label: "Publish now",     variant: "primary",      path: "publish" },
+  "request-changes": { label: "Request changes", variant: "warning",      path: "request-changes", noteRequired: true },
+  reject:            { label: "Reject",          variant: "danger",       path: "reject",          noteRequired: true },
+  archive:           { label: "Archive",         variant: "outline-dark", path: "archive" },
 };
 
 // Nút nào hiện ở trạng thái nào (khớp với requireStatus() ở backend)
@@ -40,15 +40,15 @@ export default function ReviewArticle() {
   const [message, setMessage] = useState("");
 
   // Popup
-  const [action, setAction] = useState(null);      // key trong ACTIONS, null = đóng
+  const [action, setAction] = useState(null); // key trong ACTIONS, null = đóng
   const [note, setNote] = useState("");
-  const [mode, setMode] = useState("now");         // approve: "now" | "schedule"
+  const [mode, setMode] = useState("now"); // approve: "now" | "schedule"
   const [publishDate, setPublishDate] = useState("");
+  const [minPublishDate, setMinPublishDate] = useState("");
   const [saving, setSaving] = useState(false);
   const [modalError, setModalError] = useState("");
 
   const load = useCallback(async () => {
-    setError("");
     try {
       const [aRes, hRes] = await Promise.all([
         api.get(`review/${id}`),
@@ -56,6 +56,7 @@ export default function ReviewArticle() {
       ]);
       setArticle(aRes.data);
       setHistory(hRes.data);
+      setError("");
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -64,15 +65,20 @@ export default function ReviewArticle() {
   }, [id]);
 
   useEffect(() => {
-    setLoading(true);
-    load();
+    const fetchInitial = async () => {
+      await load();
+    };
+    void fetchInitial();
   }, [load]);
 
   const openModal = (key) => {
     setAction(key);
     setNote("");
     setMode("now");
-    setPublishDate(toLocalInput(new Date(Date.now() + 60 * 60 * 1000))); // mặc định +1 giờ
+    const now = new Date();
+    const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+    setMinPublishDate(toLocalInput(now));
+    setPublishDate(toLocalInput(oneHourLater)); // mặc định +1 giờ
     setModalError("");
   };
 
@@ -93,7 +99,7 @@ export default function ReviewArticle() {
 
     const body = { note: note.trim() || null };
     if (action === "approve" && mode === "schedule") {
-      body.publishDate = publishDate;   // "2026-11-02T09:30" -> LocalDateTime ở backend
+      body.publishDate = publishDate; // "2026-11-02T09:30" -> LocalDateTime ở backend
     }
 
     setSaving(true);
@@ -102,7 +108,7 @@ export default function ReviewArticle() {
       const res = await api.put(`review/${id}/${cfg.path}`, body);
       setAction(null);
       setMessage(`${cfg.label}: article is now ${res.data.status}.`);
-      await load();                     // tải lại bài + lịch sử
+      await load(); // tải lại bài + lịch sử
     } catch (err) {
       setModalError(getErrorMessage(err));
     } finally {
@@ -187,8 +193,8 @@ export default function ReviewArticle() {
             <Card.Header className="fw-semibold">History</Card.Header>
             <ListGroup variant="flush">
               {history.length === 0 && <ListGroup.Item className="text-muted">No history.</ListGroup.Item>}
-              {[...history].reverse().map((h, i) => (
-                <ListGroup.Item key={i}>
+              {[...history].reverse().map((h) => (
+                <ListGroup.Item key={`${h.actionAt}-${h.toStatus}`}>
                   <div className="d-flex align-items-center gap-1 flex-wrap">
                     {h.fromStatus && <><StatusBadge status={h.fromStatus} /> →</>}
                     <StatusBadge status={h.toStatus} />
@@ -222,7 +228,7 @@ export default function ReviewArticle() {
                               checked={mode === "schedule"} onChange={() => setMode("schedule")} />
                   {mode === "schedule" && (
                     <Form.Control type="datetime-local" className="mt-2" value={publishDate}
-                                  min={toLocalInput(new Date())}
+                                  min={minPublishDate}
                                   onChange={(e) => setPublishDate(e.target.value)} />
                   )}
                 </Form.Group>
@@ -243,7 +249,7 @@ export default function ReviewArticle() {
             </Modal.Body>
             <Modal.Footer>
               <Button variant="secondary" onClick={closeModal} disabled={saving}>Cancel</Button>
-              <Button variant={cfg.variant.replace("outline-", "")} onClick={confirmAction} disabled={saving}>
+              <Button variant={cfg.variant.replace("outline-", "")} onClick={() => void confirmAction()} disabled={saving}>
                 {saving ? "Processing..." : cfg.label}
               </Button>
             </Modal.Footer>

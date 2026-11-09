@@ -17,6 +17,24 @@ const API_BASE_URL =
 const ARTICLE_API = `${API_BASE_URL}articles`;
 const CATEGORY_API = `${API_BASE_URL}categories`;
 
+// Hiển thị Badge màu theo trạng thái bài viết (thay cho ternary lồng nhau)
+function renderStatusBadge(status) {
+  if (status === "DRAFT") {
+    return <Badge bg="secondary">DRAFT</Badge>;
+  }
+  if (status === "PENDING_REVIEW") {
+    return (
+      <Badge bg="warning" text="dark">
+        PENDING_REVIEW
+      </Badge>
+    );
+  }
+  if (status === "PUBLISHED") {
+    return <Badge bg="success">PUBLISHED</Badge>;
+  }
+  return <Badge bg="info">{status}</Badge>;
+}
+
 export default function NewsList() {
   // State lưu danh sách bài viết hiển thị trên bảng
   const [articles, setArticles] = useState([]);
@@ -65,9 +83,8 @@ export default function NewsList() {
 
   // 1. Lấy danh sách bài viết của tôi từ Backend (GET /api/v1/articles/my)
   const fetchArticles = async () => {
-    setError("");
     try {
-      let url = `${ARTICLE_API}/my?size=50`;
+      let url = `${ARTICLE_API}/my?size=50&sort=createdDate,desc`;
       if (filterStatus !== "") {
         url += `&status=${encodeURIComponent(filterStatus)}`;
       }
@@ -77,6 +94,7 @@ export default function NewsList() {
       const data = await response.json();
       if (response.ok) {
         setArticles(data.content || []);
+        setError("");
       } else {
         setError(data.message || "Failed to load articles.");
       }
@@ -101,8 +119,12 @@ export default function NewsList() {
   };
 
   useEffect(() => {
-    fetchArticles();
-    fetchActiveCategories();
+    const loadInitialData = async () => {
+      await fetchArticles();
+      await fetchActiveCategories();
+    };
+    void loadInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 3. Mở Modal Tạo bài viết mới
@@ -127,7 +149,7 @@ export default function NewsList() {
     setShowModal(true);
   };
 
-  // 5. Lưu bài viết (Tạo mới POST hoặc Cập nhật PUT)
+  // 5. Lưu bài viết (Tạo mới POST luôn ở trạng thái DRAFT, hoặc Cập nhật PUT)
   const handleSave = async (e) => {
     e.preventDefault();
     setError("");
@@ -165,7 +187,7 @@ export default function NewsList() {
           setMessage("Updated article successfully!");
         }
         setShowModal(false);
-        fetchArticles();
+        await fetchArticles();
       } else {
         setError(resData.message || "Failed to save article.");
       }
@@ -214,7 +236,7 @@ export default function NewsList() {
 
       if (response.ok) {
         setMessage(data.message || "Submitted article for review successfully!");
-        fetchArticles();
+        await fetchArticles();
       } else {
         setError(data.message || "Cannot submit this article.");
       }
@@ -246,7 +268,7 @@ export default function NewsList() {
             <Form
               onSubmit={(e) => {
                 e.preventDefault();
-                fetchArticles();
+                void fetchArticles();
               }}
             >
               <Row className="align-items-center g-2">
@@ -259,9 +281,9 @@ export default function NewsList() {
                     <option value="DRAFT">DRAFT</option>
                     <option value="PENDING_REVIEW">PENDING_REVIEW</option>
                     <option value="CHANGES_REQUESTED">CHANGES_REQUESTED</option>
-                    <option value="APPROVED">APPROVED</option>
+                    <option value="SCHEDULED">SCHEDULED</option>
                     <option value="PUBLISHED">PUBLISHED</option>
-                    <option value="REJECTED">REJECTED</option>
+                    <option value="ARCHIVED">ARCHIVED</option>
                   </Form.Select>
                 </Col>
                 <Col md={4} className="d-flex gap-2">
@@ -294,7 +316,9 @@ export default function NewsList() {
         <tbody>
           {articles.length > 0 ? (
             articles.map((art, index) => (
-              <tr key={art.id}>
+              <tr key={art.id}
+                  className={ art.status === "DRAFT" ? "table-warning" : "" }
+              >
                 <td>{index + 1}</td>
                 <td>{art.id}</td>
                 <td>
@@ -302,25 +326,13 @@ export default function NewsList() {
                 </td>
                 <td>{art.categoryName || "Default"}</td>
                 <td>{art.author ? art.author.name : "Me"}</td>
-                <td>
-                  {art.status === "DRAFT" ? (
-                    <Badge bg="secondary">DRAFT</Badge>
-                  ) : art.status === "PENDING_REVIEW" ? (
-                    <Badge bg="warning" text="dark">
-                      PENDING_REVIEW
-                    </Badge>
-                  ) : art.status === "PUBLISHED" ? (
-                    <Badge bg="success">PUBLISHED</Badge>
-                  ) : (
-                    <Badge bg="info">{art.status}</Badge>
-                  )}
-                </td>
+                <td>{renderStatusBadge(art.status)}</td>
                 <td>
                   <Button
                     variant="info"
                     size="sm"
                     className="me-2"
-                    onClick={() => handleViewDetail(art.id)}
+                    onClick={() => void handleViewDetail(art.id)}
                   >
                     View
                   </Button>
@@ -343,7 +355,7 @@ export default function NewsList() {
                       art.status !== "DRAFT" &&
                       art.status !== "CHANGES_REQUESTED"
                     }
-                    onClick={() => handleSubmitReview(art.id)}
+                    onClick={() => void handleSubmitReview(art.id)}
                   >
                     Submit
                   </Button>
@@ -362,10 +374,10 @@ export default function NewsList() {
 
       {/* Modal Thêm / Sửa Article (cấu trúc y hệt Modal của Category) */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered>
-        <Form onSubmit={handleSave}>
+        <Form onSubmit={(e) => void handleSave(e)}>
           <Modal.Header closeButton>
             <Modal.Title>
-              {editingId === null ? "Add Article" : "Edit Article"}
+              {editingId === null ? "Add Article (Draft)" : "Edit Article"}
             </Modal.Title>
           </Modal.Header>
           <Modal.Body>
@@ -421,7 +433,7 @@ export default function NewsList() {
               Cancel
             </Button>
             <Button variant="primary" type="submit">
-              Save
+              {editingId === null ? "Save Draft" : "Save"}
             </Button>
           </Modal.Footer>
         </Form>
@@ -458,6 +470,18 @@ export default function NewsList() {
               </p>
               <p>
                 <strong>Thumbnail:</strong> {selectedArticle.thumbnail || "N/A"}
+              </p>
+              <p>
+                <strong>Created At:</strong>{" "}
+                {selectedArticle.created_at
+                  ? new Date(selectedArticle.created_at).toLocaleString()
+                  : "N/A"}
+              </p>
+              <p>
+                <strong>Updated At:</strong>{" "}
+                {selectedArticle.updated_at
+                  ? new Date(selectedArticle.updated_at).toLocaleString()
+                  : "N/A"}
               </p>
               <p>
                 <strong>Content:</strong>

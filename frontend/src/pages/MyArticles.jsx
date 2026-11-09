@@ -36,7 +36,7 @@ export default function MyArticles() {
         setLoading(false);
       }
     };
-    load();
+    void load();
   }, [status, page, reload]);
 
   const changeTab = (s) => {
@@ -151,7 +151,7 @@ export default function MyArticles() {
                           <Button
                             size="sm"
                             variant="primary"
-                            onClick={() => handleSubmit(a)}
+                            onClick={() => void handleSubmit(a)}
                           >
                             Submit
                           </Button>

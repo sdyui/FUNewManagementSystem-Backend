@@ -13,4 +13,5 @@ public interface CategoryService {
     PageResponse<CategoryResponse> searchCategories(String name, Boolean isActive, Pageable pageable);
     List<CategoryResponse> getAllActiveCategories();
     void deleteCategory(Long id);
+    List<CategoryResponse> createCategoriesBulk(List<CategoryRequest> requests);
 }

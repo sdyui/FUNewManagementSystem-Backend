@@ -24,11 +24,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -60,9 +60,9 @@ public class ArticleServiceImpl implements ArticleService {
         article.setNewsStatus(false);
 
         article.setCreatedBy(currentAuthor);
-        article.setCreatedDate(LocalDateTime.now());
+        article.setCreatedDate(LocalDateTime.now(ZoneId.systemDefault()));
 
-        // Xử lý danh mục (Category) bằng if-else và vòng lặp for cơ bản
+        // Xử lý danh mục (Category)
         if (request.getCategoryId() != null) {
             Optional<Category> categoryOpt = categoryRepository.findById(request.getCategoryId());
             if (categoryOpt.isEmpty()) {
@@ -70,25 +70,17 @@ public class ArticleServiceImpl implements ArticleService {
             }
             article.setCategory(categoryOpt.get());
         } else {
-            List<Category> allCategories = categoryRepository.findAll();
-            Category defaultCategory = null;
-            for (Category c : allCategories) {
-                if (Boolean.TRUE.equals(c.getIsActive())) {
-                    defaultCategory = c;
-                    break;
-                }
-            }
+            Category defaultCategory = categoryRepository.findAll().stream()
+                    .filter(c -> Boolean.TRUE.equals(c.getIsActive()))
+                    .findFirst()
+                    .orElse(null);
             article.setCategory(defaultCategory);
         }
 
         // Xử lý danh sách thẻ (Tags) nếu có
         if (request.getTagIds() != null && !request.getTagIds().isEmpty()) {
             List<Tag> foundTags = tagRepository.findAllById(request.getTagIds());
-            Set<Tag> tagSet = new HashSet<>();
-            for (Tag tag : foundTags) {
-                tagSet.add(tag);
-            }
-            article.setTags(tagSet);
+            article.setTags(new HashSet<>(foundTags));
         }
 
         NewsArticle savedArticle = newsArticleRepository.save(article);
@@ -126,7 +118,7 @@ public class ArticleServiceImpl implements ArticleService {
         article.setNewsTitle(request.getTitle());
         article.setNewsContent(request.getContent());
         article.setThumbnail(request.getThumbnail());
-        article.setModifiedDate(LocalDateTime.now());
+        article.setModifiedDate(LocalDateTime.now(ZoneId.systemDefault()));
         article.setUpdatedBy(currentAuthor);
 
         if (request.getCategoryId() != null) {
@@ -139,11 +131,7 @@ public class ArticleServiceImpl implements ArticleService {
 
         if (request.getTagIds() != null) {
             List<Tag> foundTags = tagRepository.findAllById(request.getTagIds());
-            Set<Tag> tagSet = new HashSet<>();
-            for (Tag tag : foundTags) {
-                tagSet.add(tag);
-            }
-            article.setTags(tagSet);
+            article.setTags(new HashSet<>(foundTags));
         }
 
         NewsArticle updatedArticle = newsArticleRepository.save(article);
@@ -185,14 +173,11 @@ public class ArticleServiceImpl implements ArticleService {
 
         Page<NewsArticle> pageResult = newsArticleRepository.findMyArticles(currentAuthor.getId(), status, pageable);
 
-        // Dùng vòng lặp for truyền thống để chuyển đổi danh sách Entity sang DTO
-        List<ArticleDetailResponse> dtoList = new ArrayList<>();
-        for (NewsArticle article : pageResult.getContent()) {
-            ArticleDetailResponse dto = mapToDetailResponse(article);
-            dtoList.add(dto);
-        }
+        List<ArticleDetailResponse> dtoList = pageResult.getContent().stream()
+                .map(this::mapToDetailResponse)
+                .toList();
 
-        return new PageResponse<ArticleDetailResponse>(
+        return new PageResponse<>(
                 dtoList,
                 pageResult.getNumber(),
                 pageResult.getSize(),
@@ -252,12 +237,9 @@ public class ArticleServiceImpl implements ArticleService {
      */
     @Override
     public List<TagResponse> getAllTags() {
-        List<Tag> allTags = tagRepository.findAll();
-        List<TagResponse> responses = new ArrayList<>();
-        for (Tag tag : allTags) {
-            responses.add(new TagResponse(tag.getId(), tag.getTagName(), tag.getNote()));
-        }
-        return responses;
+        return tagRepository.findAll().stream()
+                .map(tag -> new TagResponse(tag.getId(), tag.getTagName(), tag.getNote()))
+                .toList();
     }
 
     private ArticleDetailResponse mapToDetailResponse(NewsArticle article) {
@@ -280,10 +262,8 @@ public class ArticleServiceImpl implements ArticleService {
         List<Long> tagIds = new ArrayList<>();
         List<String> tagNames = new ArrayList<>();
         if (article.getTags() != null) {
-            for (Tag tag : article.getTags()) {
-                tagIds.add(tag.getId());
-                tagNames.add(tag.getTagName());
-            }
+            tagIds = article.getTags().stream().map(Tag::getId).toList();
+            tagNames = article.getTags().stream().map(Tag::getTagName).toList();
         }
         response.setTagIds(tagIds);
         response.setTagNames(tagNames);

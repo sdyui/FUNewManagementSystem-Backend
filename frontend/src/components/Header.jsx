@@ -1,7 +1,7 @@
-import React from "react";
 import { Link, useNavigate } from "react-router";
 import Nav from "react-bootstrap/Nav";
 import { getUser } from "./Auth/auth";
+
 function Header() {
   const account = getUser()?.account;
   const initial = account?.accountName?.charAt(0).toUpperCase() || "?";
@@ -10,7 +10,7 @@ function Header() {
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("accessToken");
-    navigate("/");
+    void navigate("/login");
   };
 
   return (

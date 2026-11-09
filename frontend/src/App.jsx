@@ -21,34 +21,34 @@ import ReviewArticle from "./pages/ReviewArticle";
 function App() {
   return (
     <Routes>
+      {/* Public routes (không cần đăng nhập) */}
+      <Route index element={<Home />} />
+      <Route path="news/:id" element={<NewsDetail />} />
       <Route path="login" element={<Login />} />
       <Route path="register" element={<Register />} />
 
-      {/* login user */}
+      {/* Authenticated user routes */}
       <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Home />} />
+        <Route element={<Layout />}>
           <Route path="about" element={<About />} />
           <Route path="contact" element={<Contact />} />
           <Route path="news" element={<NewsList />} />
-          <Route path="news/:id" element={<NewsDetail />} />
           <Route path="articles" element={<NewsList />} />
-          <Route path="articles/:id" element={<NewsDetail />} />
 
-          {/* editor */}
+          {/* Editor & Admin */}
           <Route element={<ProtectedRoute roles={["EDITOR", "ADMIN"]} />}>
             <Route path="review" element={<ReviewQueue />} />
             <Route path="review/:id" element={<ReviewArticle />} />
           </Route>
 
-          {/* author */}
+          {/* Author (Staff, Contributor, Admin) */}
           <Route element={<ProtectedRoute roles={["STAFF", "CONTRIBUTOR", "ADMIN"]} />}>
             <Route path="my-articles" element={<MyArticles />} />
             <Route path="my-articles/new" element={<ArticleForm />} />
             <Route path="my-articles/:id/edit" element={<ArticleForm />} />
           </Route>
 
-          {/* admin */}
+          {/* Admin */}
           <Route element={<ProtectedRoute roles={["ADMIN"]} />}>
             <Route path="users" element={<AccountList />} />
             <Route path="category" element={<CategoryList />} />

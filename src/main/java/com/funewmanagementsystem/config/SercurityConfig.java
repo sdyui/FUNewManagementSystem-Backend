@@ -21,9 +21,13 @@ import java.io.IOException;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SercurityConfig {
+
+    private static final String ROLE_ADMIN = "ADMIN";
+
     private final JwtAuthentificationFilter jwtAuthenticationFilter;
 
     @Bean
+    @SuppressWarnings("java:S4502") // Stateless JWT API does not use cookie-based sessions, so disabling CSRF is safe
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
@@ -33,10 +37,10 @@ public class SercurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/public/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/active", "/api/v1/category/active").authenticated()
-                        .requestMatchers("/api/v1/account/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/categories/active").authenticated()
-                        .requestMatchers("/api/v1/category/**", "/api/v1/categories/**").hasRole("ADMIN")
-                        .requestMatchers("/articles/**", "/api/v1/articles/**").hasAnyRole("CONTRIBUTOR", "STAFF", "EDITOR", "ADMIN")
+                        .requestMatchers("/api/v1/account/**").hasRole(ROLE_ADMIN)
+                        .requestMatchers("/api/v1/category/**", "/api/v1/categories/**").hasRole(ROLE_ADMIN)
+                        .requestMatchers("/api/v1/review/**").hasAnyRole("EDITOR", ROLE_ADMIN)
+                        .requestMatchers("/articles/**", "/api/v1/articles/**").hasAnyRole("CONTRIBUTOR", "STAFF", "EDITOR", ROLE_ADMIN)
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint((req, res, ex) -> writeJson(res, 401, "Unauthorized", "Missing or invalid token", req))

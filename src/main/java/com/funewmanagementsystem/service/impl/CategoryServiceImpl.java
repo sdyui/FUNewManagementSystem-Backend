@@ -10,7 +10,6 @@ import com.funewmanagementsystem.exception.ResourceNotFoundException;
 import com.funewmanagementsystem.repository.CategoryRepository;
 import com.funewmanagementsystem.service.CategoryService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -30,9 +29,17 @@ public class CategoryServiceImpl implements CategoryService {
 
     private static final Set<String> SORTABLE_FIELDS = Set.of("id", "categoryName", "isActive");
 
+
+
     @Override
     @Transactional
     public CategoryResponse createCategory(CategoryRequest request){
+        return saveNewCategory(request);
+    }
+
+    // Logic tạo 1 category, dùng chung cho createCategory và createCategoriesBulk
+    // (để createCategoriesBulk không phải gọi method @Transactional qua "this")
+    private CategoryResponse saveNewCategory(CategoryRequest request){
         if(categoryRepository.existsByCategoryNameIgnoreCase(request.getCategoryName().trim())){
             throw new DuplicateResourceException("Category already exists");
         }
@@ -41,7 +48,8 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = new Category();
         category.setCategoryName(request.getCategoryName().trim());
         category.setCategoryDescription(request.getCategoryDescription());
-        category.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
+        // null hoặc true -> true, chỉ khi gửi false mới là false
+        category.setIsActive(!Boolean.FALSE.equals(request.getIsActive()));
 
         if (request.getParentCategoryId() != null) {
             Category parent = categoryRepository.findById(request.getParentCategoryId())
@@ -51,6 +59,19 @@ public class CategoryServiceImpl implements CategoryService {
 
         Category saved = categoryRepository.save(category);
         return mapToResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public List<CategoryResponse> createCategoriesBulk(List<CategoryRequest> requests) {
+        List<CategoryResponse> resultList = new ArrayList<>();
+
+        for (CategoryRequest req : requests) {
+            CategoryResponse savedResponse = saveNewCategory(req); // helper: kiểm tra trùng tên, gán parent, lưu DB
+            resultList.add(savedResponse);
+        }
+
+        return resultList;
     }
 
     @Override

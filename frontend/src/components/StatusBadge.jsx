@@ -1,5 +1,6 @@
 import { Badge } from "react-bootstrap";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const STATUS = {
   DRAFT: { label: "Draft", bg: "secondary" },
   PENDING_REVIEW: { label: "Pending review", bg: "warning", text: "dark" },
@@ -10,6 +11,7 @@ export const STATUS = {
 };
 
 // Tác giả chỉ được sửa / gửi duyệt ở 2 trạng thái này (giống backend)
+// eslint-disable-next-line react-refresh/only-export-components
 export const EDITABLE = ["DRAFT", "CHANGES_REQUESTED"];
 
 export default function StatusBadge({ status }) {

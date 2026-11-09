@@ -1,4 +1,3 @@
-import React from "react";
 import { NavLink } from "react-router";
 import Nav from "react-bootstrap/Nav";
 import { getRole } from "./Auth/auth";
@@ -6,6 +5,7 @@ import { getRole } from "./Auth/auth";
 // Menu theo role
 const MENUS = {
   ADMIN: [
+    { to: "/my-articles", label: "My Articles" },
     { to: "/news", label: "Articles" },
     { to: "/category", label: "Category" },
     { to: "/review", label: "Review Queue" },
@@ -15,14 +15,19 @@ const MENUS = {
     { to: "/review", label: "Review Queue" },
     { to: "/news", label: "Articles" },
   ],
-  STAFF: [{ to: "/news", label: "Articles" }],
-  CONTRIBUTOR: [{ to: "/news", label: "Articles" }],
+  STAFF: [
+    { to: "/my-articles", label: "My Articles" },
+    { to: "/news", label: "Articles" },
+  ],
+  CONTRIBUTOR: [
+    { to: "/my-articles", label: "My Articles" },
+    { to: "/news", label: "Articles" },
+  ],
 };
 
 function Sidebar() {
   const navItems = MENUS[getRole()] || [
     { to: "/news", label: "Articles" },
-    { to: "/category", label: "Category" },
   ];
 
   return (

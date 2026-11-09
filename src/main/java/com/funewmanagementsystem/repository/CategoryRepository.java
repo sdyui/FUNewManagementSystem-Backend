@@ -12,26 +12,26 @@ import java.util.List;
 
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, Long> {
-    boolean existsByCategoryNameIgnoreCase(String categoryName);
+  boolean existsByCategoryNameIgnoreCase(String categoryName);
 
-    boolean existsByCategoryNameIgnoreCaseAndIdNot(String categoryName, Long id);
+  boolean existsByCategoryNameIgnoreCaseAndIdNot(String categoryName, Long id);
 
-    boolean existsByParentCategory_Id(Long parentCategoryId);
+  boolean existsByParentCategory_Id(Long parentCategoryId);
 
-    List<Category> findByIsActiveTrue();
+  List<Category> findByIsActiveTrue();
 
-    @Query(value = """
-        SELECT c FROM Category c
-        LEFT JOIN FETCH c.parentCategory
-        WHERE (:name IS NULL OR LOWER(c.categoryName) LIKE LOWER(CONCAT('%', :name, '%')))
-          AND (:isActive IS NULL OR c.isActive = :isActive)
-        """,
-            countQuery = """
-        SELECT COUNT(c) FROM Category c
-        WHERE (:name IS NULL OR LOWER(c.categoryName) LIKE LOWER(CONCAT('%', :name, '%')))
-          AND (:isActive IS NULL OR c.isActive = :isActive)
-        """)
-    Page<Category> search(@Param("name") String name,
-                          @Param("isActive") Boolean isActive,
-                          Pageable pageable);
+  // search
+  @Query(value = """
+      SELECT c FROM Category c
+      LEFT JOIN FETCH c.parentCategory
+      WHERE (:name IS NULL OR LOWER(c.categoryName) LIKE LOWER(CONCAT('%', :name, '%')))
+        AND (:isActive IS NULL OR c.isActive = :isActive)
+      """, countQuery = """
+      SELECT COUNT(c) FROM Category c
+      WHERE (:name IS NULL OR LOWER(c.categoryName) LIKE LOWER(CONCAT('%', :name, '%')))
+        AND (:isActive IS NULL OR c.isActive = :isActive)
+      """)
+  Page<Category> search(@Param("name") String name,
+      @Param("isActive") Boolean isActive,
+      Pageable pageable);
 }

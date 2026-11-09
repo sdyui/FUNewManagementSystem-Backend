@@ -11,6 +11,7 @@ import {
   Row,
   Col,
 } from "react-bootstrap";
+import axios from "axios";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1/";
@@ -58,46 +59,44 @@ export default function CategoryList() {
     return headers;
   };
 
-  // 1. Lấy danh sách Category từ Backend (hỗ trợ tìm kiếm theo tên)
+  // 1. Lấy danh sách Category từ Backend bằng axios.get (hỗ trợ tìm kiếm theo tên)
   const fetchCategories = async () => {
-    setError("");
     try {
       let url = `${CATEGORY_API}?size=50`;
       if (searchName.trim() !== "") {
         url += `&name=${encodeURIComponent(searchName.trim())}`;
       }
-      const response = await fetch(url, {
+      const response = await axios.get(url, {
         headers: getHeaders(),
       });
-      const data = await response.json();
-      if (response.ok) {
-        setCategories(data.content || []);
-      } else {
-        setError(data.message || "Failed to load categories.");
-      }
-    } catch {
-      setError("Cannot connect to Backend server.");
+      setCategories(response.data.content || []);
+      setError("");
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Cannot connect to Backend server."
+      );
     }
   };
 
-  // 2. Lấy danh sách Category đang active để làm dropdown chọn danh mục cha
+  // 2. Lấy danh sách Category đang active bằng axios.get
   const fetchActiveCategories = async () => {
     try {
-      const response = await fetch(`${CATEGORY_API}/active`, {
+      const response = await axios.get(`${CATEGORY_API}/active`, {
         headers: getHeaders(),
       });
-      if (response.ok) {
-        const data = await response.json();
-        setActiveCategories(data || []);
-      }
+      setActiveCategories(response.data || []);
     } catch {
       // ignore
     }
   };
 
   useEffect(() => {
-    fetchCategories();
-    fetchActiveCategories();
+    const loadInitialData = async () => {
+      await fetchCategories();
+      await fetchActiveCategories();
+    };
+    void loadInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 3. Mở Modal Tạo mới
@@ -122,7 +121,7 @@ export default function CategoryList() {
     setShowModal(true);
   };
 
-  // 5. Lưu Category (Tạo mới hoặc Cập nhật)
+  // 5. Lưu Category (Tạo mới bằng axios.post hoặc Cập nhật bằng axios.put)
   const handleSave = async (e) => {
     e.preventDefault();
     setError("");
@@ -137,41 +136,27 @@ export default function CategoryList() {
     };
 
     try {
-      let response;
       if (editingId === null) {
-        response = await fetch(CATEGORY_API, {
-          method: "POST",
+        await axios.post(CATEGORY_API, requestBody, {
           headers: getHeaders(),
-          body: JSON.stringify(requestBody),
         });
+        setMessage("Created category successfully!");
       } else {
-        response = await fetch(`${CATEGORY_API}/${editingId}`, {
-          method: "PUT",
+        await axios.put(`${CATEGORY_API}/${editingId}`, requestBody, {
           headers: getHeaders(),
-          body: JSON.stringify(requestBody),
         });
+        setMessage("Updated category successfully!");
       }
 
-      const resData = await response.json();
-
-      if (response.ok) {
-        if (editingId === null) {
-          setMessage("Created category successfully!");
-        } else {
-          setMessage("Updated category successfully!");
-        }
-        setShowModal(false);
-        fetchCategories();
-        fetchActiveCategories();
-      } else {
-        setError(resData.message || "Failed to save category.");
-      }
-    } catch {
-      setError("Error connecting to server.");
+      setShowModal(false);
+      await fetchCategories();
+      await fetchActiveCategories();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to save category.");
     }
   };
 
-  // 6. Xóa Category
+  // 6. Xóa Category bằng axios.delete
   const handleDelete = async (id) => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this category?"
@@ -184,21 +169,14 @@ export default function CategoryList() {
     setMessage("");
 
     try {
-      const response = await fetch(`${CATEGORY_API}/${id}`, {
-        method: "DELETE",
+      await axios.delete(`${CATEGORY_API}/${id}`, {
         headers: getHeaders(),
       });
-
-      if (response.ok) {
-        setMessage("Deleted category successfully!");
-        fetchCategories();
-        fetchActiveCategories();
-      } else {
-        const data = await response.json();
-        setError(data.message || "Cannot delete this category.");
-      }
-    } catch {
-      setError("Error connecting to server.");
+      setMessage("Deleted category successfully!");
+      await fetchCategories();
+      await fetchActiveCategories();
+    } catch (err) {
+      setError(err.response?.data?.message || "Cannot delete this category.");
     }
   };
 
@@ -225,7 +203,7 @@ export default function CategoryList() {
             <Form
               onSubmit={(e) => {
                 e.preventDefault();
-                fetchCategories();
+                void fetchCategories();
               }}
             >
               <Row className="align-items-center g-2">
@@ -294,7 +272,7 @@ export default function CategoryList() {
                   <Button
                     variant="danger"
                     size="sm"
-                    onClick={() => handleDelete(cat.id)}
+                    onClick={() => void handleDelete(cat.id)}
                   >
                     Delete
                   </Button>
@@ -313,7 +291,7 @@ export default function CategoryList() {
 
       {/* Modal Thêm / Sửa Category */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered>
-        <Form onSubmit={handleSave}>
+        <Form onSubmit={(e) => void handleSave(e)}>
           <Modal.Header closeButton>
             <Modal.Title>
               {editingId === null ? "Add Category" : "Edit Category"}

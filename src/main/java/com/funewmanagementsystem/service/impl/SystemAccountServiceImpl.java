@@ -17,7 +17,6 @@ import com.funewmanagementsystem.security.CurrentUserService;
 import com.funewmanagementsystem.security.JwtService;
 import com.funewmanagementsystem.service.SystemAccountService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;

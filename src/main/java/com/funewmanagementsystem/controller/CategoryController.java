@@ -3,32 +3,24 @@ package com.funewmanagementsystem.controller;
 import com.funewmanagementsystem.dto.request.CategoryRequest;
 import com.funewmanagementsystem.dto.respone.CategoryResponse;
 import com.funewmanagementsystem.dto.respone.PageResponse;
-import com.funewmanagementsystem.exception.ErrorResponse;
 import com.funewmanagementsystem.service.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// CORS được cấu hình tập trung trong config/CorsConfig.java nên không cần @CrossOrigin ở đây
 @RestController
 @RequestMapping("/api/v1/categories")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 @Tag(name = "Category Management", description = "APIs for managing news categories")
 public class CategoryController {
 
@@ -65,6 +57,13 @@ public class CategoryController {
     public ResponseEntity<CategoryResponse> createCategory(@Valid @RequestBody CategoryRequest request) {
         CategoryResponse response = categoryService.createCategory(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Operation(summary = "Create multiple categories at once")
+    @PostMapping("/bulk")
+    public ResponseEntity<List<CategoryResponse>> createCategories(@Valid @RequestBody List<CategoryRequest> requests) {
+        List<CategoryResponse> responses = categoryService.createCategoriesBulk(requests);
+        return ResponseEntity.status(HttpStatus.CREATED).body(responses);
     }
 
     // 5. Update category

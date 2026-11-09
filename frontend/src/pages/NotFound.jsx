@@ -1,5 +1,4 @@
-import React from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 
 export default function NotFound() {
   const navigate = useNavigate();
@@ -10,7 +9,7 @@ export default function NotFound() {
       <p className="lead text-muted mb-4">
         The page you are looking for does not exist or has been moved.
       </p>
-      <button onClick={() => navigate(-1)} className="btn btn-primary">
+      <button onClick={() => void navigate(-1)} className="btn btn-primary">
         Back to Previous Page
       </button>
     </div>

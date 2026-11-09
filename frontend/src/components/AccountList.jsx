@@ -11,7 +11,7 @@ export default function ManageAccount() {
   const [error, setError] = useState("");
   const myId = getUser()?.account?.accountId; // không cho tự đổi role của mình
 
-  const ROLES = ["STAFF", "EDITOR", "ADMIN"];
+  const ROLES = ["CONTRIBUTOR", "STAFF", "EDITOR", "ADMIN"];
 
   const handleRoleChange = async (item, newRole) => {
     if (newRole === item.accountRole) return;
@@ -57,7 +57,7 @@ export default function ManageAccount() {
         console.error("Error fetching accounts:", error);
       }
     }
-    fetchAccounts();
+    void fetchAccounts();
   }, []);
 
   const handleEmailSaved = (updated) => {
@@ -137,7 +137,7 @@ export default function ManageAccount() {
                     <Form.Select
                       size="sm"
                       value={item.accountRole}
-                      onChange={(e) => handleRoleChange(item, e.target.value)}
+                      onChange={(e) => void handleRoleChange(item, e.target.value)}
                     >
                       {ROLES.map((r) => (
                         <option key={r} value={r}>

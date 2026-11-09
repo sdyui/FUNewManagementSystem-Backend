@@ -1,6 +1,5 @@
 package com.funewmanagementsystem.controller;
 
-import com.fasterxml.jackson.databind.util.BeanUtil;
 import com.funewmanagementsystem.dto.request.CreateAccountRequest;
 import com.funewmanagementsystem.dto.request.SystemAccountRequest;
 import com.funewmanagementsystem.dto.request.UpdateAccount;
@@ -8,9 +7,7 @@ import com.funewmanagementsystem.dto.request.UpdateRoleRequest;
 import com.funewmanagementsystem.dto.respone.LoginResponse;
 import com.funewmanagementsystem.dto.respone.PageResponse;
 import com.funewmanagementsystem.dto.respone.SystemAccountResponse;
-import com.funewmanagementsystem.entity.SystemAccount;
 import com.funewmanagementsystem.exception.ErrorResponse;
-import com.funewmanagementsystem.exception.ResourceNotFoundException;
 import com.funewmanagementsystem.service.SystemAccountService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -18,11 +15,9 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -34,7 +29,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class SystemAccountController {
     private static final String USER_EXAMPLE = """
             {
@@ -142,7 +136,6 @@ public class SystemAccountController {
             }""";
     private final SystemAccountService systemAccountService;
 
-
     @Operation(
             summary = "Login",
             description = "Authenticate a user using account name and password. Returns a JWT to send as 'Authorization: Bearer <token>'.",
@@ -150,42 +143,36 @@ public class SystemAccountController {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = SystemAccountRequest.class),
                             examples = @ExampleObject(name = "login", value = LOGIN_REQUEST_EXAMPLE))))
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Login successful",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = LoginResponse.class),
-                            examples = @ExampleObject(name = "login", value = LOGIN_RESPONSE_EXAMPLE))),
-            @ApiResponse(responseCode = "400", description = "Invalid request data (missing account name or password)",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class),
-                            examples = @ExampleObject(name = "validationError", value = LOGIN_VALIDATION_ERROR_EXAMPLE))),
-            @ApiResponse(responseCode = "401", description = "Invalid account name or password",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class),
-                            examples = @ExampleObject(name = "unauthorized", value = LOGIN_UNAUTHORIZED_EXAMPLE)))
-    })
-
-
-
+    @ApiResponse(responseCode = "200", description = "Login successful",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = LoginResponse.class),
+                    examples = @ExampleObject(name = "login", value = LOGIN_RESPONSE_EXAMPLE)))
+    @ApiResponse(responseCode = "400", description = "Invalid request data (missing account name or password)",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = ErrorResponse.class),
+                    examples = @ExampleObject(name = "validationError", value = LOGIN_VALIDATION_ERROR_EXAMPLE)))
+    @ApiResponse(responseCode = "401", description = "Invalid account name or password",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = ErrorResponse.class),
+                    examples = @ExampleObject(name = "unauthorized", value = LOGIN_UNAUTHORIZED_EXAMPLE)))
     @PostMapping("/auth/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody SystemAccountRequest systemAccountRequest){
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody SystemAccountRequest systemAccountRequest) {
         LoginResponse loginResponse = systemAccountService.login(systemAccountRequest);
         return ResponseEntity.ok(loginResponse);
     }
+
     @Operation(
             summary = "Search accounts",
             description = "Returns a page of accounts, optionally filtered by name and email (partial, case-insensitive). "
                     + "Sort with sort=field,asc|desc; allowed fields: id, accountName, accountEmail, accountRole.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Page of accounts (content is empty when nothing matches)",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = PageResponse.class),
-                            examples = @ExampleObject(name = "page", value = PAGE_EXAMPLE))),
-            @ApiResponse(responseCode = "400", description = "Invalid sort field",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class),
-                            examples = @ExampleObject(name = "badSort", value = BAD_SORT_EXAMPLE)))
-    })
+    @ApiResponse(responseCode = "200", description = "Page of accounts (content is empty when nothing matches)",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = PageResponse.class),
+                    examples = @ExampleObject(name = "page", value = PAGE_EXAMPLE)))
+    @ApiResponse(responseCode = "400", description = "Invalid sort field",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = ErrorResponse.class),
+                    examples = @ExampleObject(name = "badSort", value = BAD_SORT_EXAMPLE)))
     @GetMapping("/account")
     public ResponseEntity<PageResponse<SystemAccountResponse>> fetchAllAccount(
             @Parameter(description = "Part of account name", example = "adm")
@@ -194,28 +181,27 @@ public class SystemAccountController {
             @RequestParam(required = false) String email,
             @ParameterObject
             @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
-
         return ResponseEntity.ok(systemAccountService.searchAccounts(name, email, pageable));
     }
+
     @Operation(
             summary = "Get an account by id",
             description = "Returns the account with the given id, or 404 Not Found if no such account exists.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Account found",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = SystemAccountResponse.class),
-                            examples = @ExampleObject(name = "account", value = USER_EXAMPLE))),
-            @ApiResponse(responseCode = "404", description = "Account not found",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class),
-                            examples = @ExampleObject(name = "notFound", value = NOT_FOUND_EXAMPLE)))
-    })
-
+    @ApiResponse(responseCode = "200", description = "Account found",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = SystemAccountResponse.class),
+                    examples = @ExampleObject(name = "account", value = USER_EXAMPLE)))
+    @ApiResponse(responseCode = "404", description = "Account not found",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = ErrorResponse.class),
+                    examples = @ExampleObject(name = "notFound", value = NOT_FOUND_EXAMPLE)))
     @GetMapping("/account/{id}")
-    public ResponseEntity<SystemAccountResponse> fetchAccountById(@Parameter(description = "Id of the account to retrieve", example = "1", required = true)
-                                              @PathVariable long id){
+    public ResponseEntity<SystemAccountResponse> fetchAccountById(
+            @Parameter(description = "Id of the account to retrieve", example = "1", required = true)
+            @PathVariable long id) {
         return ResponseEntity.ok(systemAccountService.getAccountById(id));
     }
+
     @Operation(
             summary = "Create a new account",
             description = "Creates a new account with role STAFF. The password is hashed with BCrypt before saving. "
@@ -224,61 +210,57 @@ public class SystemAccountController {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = CreateAccountRequest.class),
                             examples = @ExampleObject(name = "newAccount", value = CREATE_ACCOUNT_REQUEST_EXAMPLE))))
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Account created",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = SystemAccountResponse.class),
-                            examples = @ExampleObject(name = "created", value = CREATED_USER_EXAMPLE))),
-            @ApiResponse(responseCode = "400", description = "Invalid request data (missing field, wrong email format, password too short)",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class),
-                            examples = @ExampleObject(name = "validationError", value = VALIDATION_ERROR_EXAMPLE))),
-            @ApiResponse(responseCode = "409", description = "Account name or email already exists",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class),
-                            examples = @ExampleObject(name = "duplicate", value = DUPLICATE_EXAMPLE)))
-    })
+    @ApiResponse(responseCode = "201", description = "Account created",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = SystemAccountResponse.class),
+                    examples = @ExampleObject(name = "created", value = CREATED_USER_EXAMPLE)))
+    @ApiResponse(responseCode = "400", description = "Invalid request data (missing field, wrong email format, password too short)",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = ErrorResponse.class),
+                    examples = @ExampleObject(name = "validationError", value = VALIDATION_ERROR_EXAMPLE)))
+    @ApiResponse(responseCode = "409", description = "Account name or email already exists",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = ErrorResponse.class),
+                    examples = @ExampleObject(name = "duplicate", value = DUPLICATE_EXAMPLE)))
     @PostMapping("/auth/register")
-    public ResponseEntity<SystemAccountResponse> createAccount(@Valid @RequestBody CreateAccountRequest createAccountRequest){
+    public ResponseEntity<SystemAccountResponse> createAccount(@Valid @RequestBody CreateAccountRequest createAccountRequest) {
         SystemAccountResponse created = systemAccountService.createAccount(createAccountRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
+
     @Operation(
             summary = "Delete an account",
             description = "Deletes the account with the given id. Fails with 409 if the account still owns news articles.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Account deleted", content = @Content),
-            @ApiResponse(responseCode = "404", description = "Account not found",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class),
-                            examples = @ExampleObject(name = "notFound", value = NOT_FOUND_EXAMPLE))),
-            @ApiResponse(responseCode = "409", description = "Account is still referenced by news articles",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class),
-                            examples = @ExampleObject(name = "conflict", value = DELETE_CONFLICT_EXAMPLE)))
-    })
+    @ApiResponse(responseCode = "204", description = "Account deleted", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Account not found",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = ErrorResponse.class),
+                    examples = @ExampleObject(name = "notFound", value = NOT_FOUND_EXAMPLE)))
+    @ApiResponse(responseCode = "409", description = "Account is still referenced by news articles",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = ErrorResponse.class),
+                    examples = @ExampleObject(name = "conflict", value = DELETE_CONFLICT_EXAMPLE)))
     @DeleteMapping("/account/{id}")
-    public ResponseEntity<Void> deleteAccount(@Parameter(description = "Id of the account to delete",example = "1", required = true)
-                                           @PathVariable long id
-                                           ){
+    public ResponseEntity<Void> deleteAccount(
+            @Parameter(description = "Id of the account to delete", example = "1", required = true)
+            @PathVariable long id) {
         systemAccountService.deleteAccount(id);
         return ResponseEntity.noContent().build();
     }
+
     @PutMapping("/account/{id}")
-    public ResponseEntity<?>updateSystemAccount(@PathVariable Long id,
-                                                 @Valid @RequestBody UpdateAccount updateAccount){
-        return ResponseEntity.ok(systemAccountService.save(id,updateAccount));
+    public ResponseEntity<SystemAccountResponse> updateSystemAccount(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateAccount updateAccount) {
+        return ResponseEntity.ok(systemAccountService.save(id, updateAccount));
     }
+
     @Operation(summary = "Change account role (ADMIN only)",
             description = "Cannot change your own role or remove the last ADMIN.")
     @PutMapping("/account/{id}/role")
-    public ResponseEntity<SystemAccountResponse> changeRole(@PathVariable Long id,
-                                                            @Valid @RequestBody UpdateRoleRequest request) {
+    public ResponseEntity<SystemAccountResponse> changeRole(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateRoleRequest request) {
         return ResponseEntity.ok(systemAccountService.changeRole(id, request.getAccountRole()));
     }
-
-
-
-
-
 }

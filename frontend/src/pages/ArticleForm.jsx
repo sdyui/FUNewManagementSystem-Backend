@@ -6,6 +6,16 @@ import StatusBadge, { EDITABLE } from "../components/StatusBadge";
 
 const EMPTY = { title: "", content: "", thumbnail: "", categoryId: "", tagIds: [] };
 
+function getPageTitle(isNew, readOnly) {
+  if (isNew) {
+    return "New article (Draft)";
+  }
+  if (readOnly) {
+    return "View article";
+  }
+  return "Edit article";
+}
+
 // Dùng chung cho: tạo mới (/my-articles/new), sửa và chỉ xem (/my-articles/:id/edit)
 export default function ArticleForm() {
   const { id } = useParams(); // có id = sửa / xem, không có = tạo mới
@@ -57,7 +67,7 @@ export default function ArticleForm() {
         setLoading(false);
       }
     };
-    load();
+    void load();
   }, [id, isNew]);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -71,8 +81,9 @@ export default function ArticleForm() {
     }));
   };
 
-  // submitAfter = true: lưu xong gửi duyệt luôn
-  const save = async (submitAfter) => {
+  // Tạo mới bài viết chỉ được phép ở trạng thái DRAFT (POST /articles)
+  // Chỉnh sửa bài viết cập nhật thông tin (PUT /articles/{id})
+  const save = async () => {
     setSaving(true);
     setError("");
     const body = {
@@ -83,14 +94,37 @@ export default function ArticleForm() {
       tagIds: form.tagIds,
     };
     try {
-      const res = isNew
-        ? await api.post("articles", body)
-        : await api.put(`articles/${id}`, body);
-
-      if (submitAfter) {
-        await api.put(`articles/${res.data.id}/submit`);
+      if (isNew) {
+        await api.post("articles", body);
+      } else {
+        await api.put(`articles/${id}`, body);
       }
-      navigate("/my-articles");
+      void navigate("/my-articles");
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Gửi bài viết đã tồn tại để xét duyệt (PUT /articles/{id}/submit)
+  const handleSubmitForReview = async () => {
+    if (isNew) {
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const body = {
+        title: form.title.trim(),
+        content: form.content,
+        thumbnail: form.thumbnail.trim() || null,
+        categoryId: form.categoryId === "" ? null : Number(form.categoryId),
+        tagIds: form.tagIds,
+      };
+      await api.put(`articles/${id}`, body);
+      await api.put(`articles/${id}/submit`);
+      void navigate("/my-articles");
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -100,7 +134,7 @@ export default function ArticleForm() {
 
   const handleSubmitForm = (e) => {
     e.preventDefault();
-    save(false);
+    void save();
   };
 
   if (loading) {
@@ -118,11 +152,29 @@ export default function ArticleForm() {
       </Link>
 
       <div className="d-flex align-items-center gap-3 mb-3">
-        <h3 className="mb-0">
-          {isNew ? "New article" : readOnly ? "View article" : "Edit article"}
-        </h3>
+        <h3 className="mb-0">{getPageTitle(isNew, readOnly)}</h3>
         {article && <StatusBadge status={article.status} />}
       </div>
+
+      {/* Hiển thị đầy đủ thông tin chi tiết bài viết (Feature 3: Get Article Detail) */}
+      {article && (
+        <div className="text-muted small mb-3">
+          <span className="me-3">
+            <strong>ID:</strong> {article.id}
+          </span>
+          <span className="me-3">
+            <strong>Author:</strong> {article.author?.name || "N/A"}
+          </span>
+          <span className="me-3">
+            <strong>Created:</strong>{" "}
+            {article.created_at ? new Date(article.created_at).toLocaleString() : "N/A"}
+          </span>
+          <span>
+            <strong>Updated:</strong>{" "}
+            {article.updated_at ? new Date(article.updated_at).toLocaleString() : "N/A"}
+          </span>
+        </div>
+      )}
 
       {/* Ghi chú của editor */}
       {article?.latest_feedback && (
@@ -191,22 +243,22 @@ export default function ArticleForm() {
           </Row>
 
           {tags.length > 0 && (
-          <Form.Group className="mb-3">
-            <Form.Label>Tags</Form.Label>
-            <div>
-              {tags.map((t) => (
-                <Form.Check
-                  inline
-                  key={t.id}
-                  type="checkbox"
-                  id={`tag-${t.id}`}
-                  label={t.tagName}
-                  checked={form.tagIds.includes(t.id)}
-                  onChange={() => toggleTag(t.id)}
-                />
-              ))}
-            </div>
-          </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Tags</Form.Label>
+              <div>
+                {tags.map((t) => (
+                  <Form.Check
+                    inline
+                    key={t.id}
+                    type="checkbox"
+                    id={`tag-${t.id}`}
+                    label={t.tagName}
+                    checked={form.tagIds.includes(t.id)}
+                    onChange={() => toggleTag(t.id)}
+                  />
+                ))}
+              </div>
+            </Form.Group>
           )}
 
           <Form.Group className="mb-3" controlId="articleContent">
@@ -230,16 +282,18 @@ export default function ArticleForm() {
 
         {!readOnly && (
           <div className="d-flex gap-2">
-            <Button type="submit" variant="secondary" disabled={saving}>
+            <Button type="submit" variant={isNew ? "primary" : "secondary"} disabled={saving}>
               {saving ? "Saving..." : "Save draft"}
             </Button>
-            <Button
-              variant="primary"
-              disabled={saving || !form.content.trim()}
-              onClick={() => save(true)}
-            >
-              Save & submit for review
-            </Button>
+            {!isNew && (
+              <Button
+                variant="primary"
+                disabled={saving || !form.title.trim() || !form.content.trim()}
+                onClick={() => void handleSubmitForReview()}
+              >
+                Submit for review
+              </Button>
+            )}
           </div>
         )}
       </Form>

@@ -17,24 +17,29 @@ import ArticleForm from "./pages/ArticleForm";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import ReviewQueue from "./pages/ReviewQueue";
 import ReviewArticle from "./pages/ReviewArticle";
+import PublicNewsDetail from "./pages/PublicNewsDetail";
+import AuditLogs from "./pages/AuditLogs";
 
 function App() {
   return (
     <Routes>
-      {/* Public routes (không cần đăng nhập) */}
-      <Route index element={<Home />} />
-      <Route path="news/:id" element={<NewsDetail />} />
       <Route path="login" element={<Login />} />
       <Route path="register" element={<Register />} />
 
-      {/* login user */}
-      <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Home />} />
-          <Route path="about" element={<About />} />
-          <Route path="contact" element={<Contact />} />
+      {/* Layout: Header luôn có, Sidebar chỉ hiện khi đã đăng nhập */}
+      <Route path="/" element={<Layout />}>
+        {/* Guest: xem được không cần đăng nhập */}
+        <Route index element={<Home />} />
+        <Route path="post/:id" element={<PublicNewsDetail />} />
+        <Route path="news/:id" element={<NewsDetail />} />
+        <Route path="about" element={<About />} />
+        <Route path="contact" element={<Contact />} />
+
+        {/* Authenticated user routes */}
+        <Route element={<ProtectedRoute />}>
           <Route path="news" element={<NewsList />} />
           <Route path="articles" element={<NewsList />} />
+          <Route path="articles/:id" element={<NewsDetail />} />
 
           {/* Editor & Admin */}
           <Route element={<ProtectedRoute roles={["EDITOR", "ADMIN"]} />}>
@@ -43,7 +48,11 @@ function App() {
           </Route>
 
           {/* Author (Staff, Contributor, Admin) */}
-          <Route element={<ProtectedRoute roles={["STAFF", "CONTRIBUTOR", "ADMIN"]} />}>
+          <Route
+            element={
+              <ProtectedRoute roles={["STAFF", "CONTRIBUTOR", "ADMIN"]} />
+            }
+          >
             <Route path="my-articles" element={<MyArticles />} />
             <Route path="my-articles/new" element={<ArticleForm />} />
             <Route path="my-articles/:id/edit" element={<ArticleForm />} />
@@ -53,6 +62,7 @@ function App() {
           <Route element={<ProtectedRoute roles={["ADMIN"]} />}>
             <Route path="users" element={<AccountList />} />
             <Route path="category" element={<CategoryList />} />
+            <Route path="audit-logs" element={<AuditLogs />} />
           </Route>
         </Route>
       </Route>

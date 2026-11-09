@@ -80,7 +80,7 @@ public class ReviewServiceImpl implements ReviewService {
     public ArticleDetailResponse requestChanges(Long id, String note) {
         SystemAccount me = requireReviewer();
         NewsArticle article = findReviewable(id);
-        requireStatus(article, ArticleStatus.PENDING_REVIEW, ArticleStatus.SCHEDULED, ArticleStatus.ARCHIVED);
+        requireStatus(article, ArticleStatus.PENDING_REVIEW, ArticleStatus.SCHEDULED, ArticleStatus.PUBLISHED, ArticleStatus.ARCHIVED);
         NewsArticle saved = articleWorkFlowService.transition(article, ArticleStatus.CHANGES_REQUESTED, me, requireNote(note));
         return mapToDetailResponse(saved, findLatestFeedback(saved));
     }

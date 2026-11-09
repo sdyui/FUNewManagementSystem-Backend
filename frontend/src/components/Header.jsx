@@ -10,7 +10,7 @@ function Header() {
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("accessToken");
-    void navigate("/login");
+    void navigate("/");
   };
 
   return (
@@ -25,51 +25,57 @@ function Header() {
               style={{ height: "45px" }}
             />
           </Link>
+
+          <Nav className="gap-2 d-none d-md-flex fw-medium">
+            <Nav.Link as={Link} to="/">
+              News
+            </Nav.Link>
+            <Nav.Link as={Link} to="/about">
+              About
+            </Nav.Link>
+            <Nav.Link as={Link} to="/contact">
+              Contact
+            </Nav.Link>
+          </Nav>
         </div>
 
-        {/* Right side: User Profile */}
-        <div className="d-flex align-items-center gap-3">
-          <div className="text-end">
-            <h6 className="mb-0 fw-semibold">
-              {account?.accountName || "Guest"}
-            </h6>
-            <span className="badge bg-primary text-uppercase">
-              {account?.accountRole || "Guest"}
-            </span>
-          </div>
-
+        {/* Right side: Login button (Guest) hoặc User dropdown (Logged in) */}
+        {!account ? (
+          <Link to="/login" className="btn btn-primary">
+            Login
+          </Link>
+        ) : (
           <div className="dropdown">
-            <div
-              className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
-              style={{
-                width: "42px",
-                height: "42px",
-                fontSize: "18px",
-                cursor: "pointer",
-              }}
+            <button
+              className="btn btn-light dropdown-toggle d-flex align-items-center gap-2"
+              type="button"
               data-bs-toggle="dropdown"
               aria-expanded="false"
             >
-              {initial}
-            </div>
+              <div
+                className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                style={{ width: "36px", height: "36px" }}
+              >
+                {initial}
+              </div>
+              <span>{account?.accountName}</span>
+            </button>
             <ul className="dropdown-menu dropdown-menu-end shadow">
               <li>
-                <Nav.Link
-                  as={Link}
-                  to="/profile"
-                  className="dropdown-item px-3 py-2"
-                >
-                  My Profile
-                </Nav.Link>
+                <h6 className="dropdown-header">
+                  {account?.email}
+                  <div className="small text-muted">{account?.accountRole}</div>
+                </h6>
               </li>
               <li>
-                <Nav.Link
-                  as={Link}
-                  to="/settings"
-                  className="dropdown-item px-3 py-2"
-                >
+                <button type="button" className="dropdown-item">
+                  Profile
+                </button>
+              </li>
+              <li>
+                <button type="button" className="dropdown-item">
                   Settings
-                </Nav.Link>
+                </button>
               </li>
               <li>
                 <hr className="dropdown-divider" />
@@ -77,7 +83,7 @@ function Header() {
               <li>
                 <button
                   type="button"
-                  className="dropdown-item px-3 py-2 text-danger"
+                  className="dropdown-item text-danger"
                   onClick={handleLogout}
                 >
                   Logout
@@ -85,7 +91,7 @@ function Header() {
               </li>
             </ul>
           </div>
-        </div>
+        )}
       </div>
     </header>
   );

@@ -1,6 +1,7 @@
 package com.funewmanagementsystem.service.impl;
 
 import com.funewmanagementsystem.dto.respone.ArticleDetailResponse;
+import com.funewmanagementsystem.dto.respone.AuditLogResponse;
 import com.funewmanagementsystem.dto.respone.PageResponse;
 import com.funewmanagementsystem.dto.respone.WorkflowLogResponse;
 import com.funewmanagementsystem.entity.ArticleStatus;
@@ -21,7 +22,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Set;
 
@@ -29,11 +32,13 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class ReviewServiceImpl implements ReviewService {
 
+    private static final Set<String> LOG_SORT_FIELDS = Set.of("actionAt", "id");
     private static final Set<String> SORT_FIELDS = Set.of("modifiedDate", "createdDate", "newsTitle");
     private final NewsArticleRepository newsArticleRepository;
     private final ArticleWorkflowLogRepository logRepository;
     private final CurrentUserService currentUserService;
     private final ArticleWorkFlowService articleWorkFlowService;
+
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ArticleDetailResponse> getPendingQueue(Pageable pageable) {
@@ -47,7 +52,6 @@ public class ReviewServiceImpl implements ReviewService {
                 .map(a -> mapToDetailResponse(a, null)));
     }
 
-
     @Override
     @Transactional(readOnly = true)
     public ArticleDetailResponse getArticle(Long id) {
@@ -55,7 +59,6 @@ public class ReviewServiceImpl implements ReviewService {
         NewsArticle article = findReviewable(id);
         return mapToDetailResponse(article, findLatestFeedback(article));
     }
-
 
     @Override
     @Transactional(readOnly = true)
@@ -77,9 +80,9 @@ public class ReviewServiceImpl implements ReviewService {
     public ArticleDetailResponse requestChanges(Long id, String note) {
         SystemAccount me = requireReviewer();
         NewsArticle article = findReviewable(id);
-        requireStatus(article, ArticleStatus.PENDING_REVIEW,ArticleStatus.SCHEDULED);
-        NewsArticle saved = articleWorkFlowService.transition(article,ArticleStatus.CHANGES_REQUESTED,me,requireNote(note));
-        return mapToDetailResponse(saved,findLatestFeedback(saved));
+        requireStatus(article, ArticleStatus.PENDING_REVIEW, ArticleStatus.SCHEDULED, ArticleStatus.ARCHIVED);
+        NewsArticle saved = articleWorkFlowService.transition(article, ArticleStatus.CHANGES_REQUESTED, me, requireNote(note));
+        return mapToDetailResponse(saved, findLatestFeedback(saved));
     }
 
     @Override
@@ -88,8 +91,8 @@ public class ReviewServiceImpl implements ReviewService {
         SystemAccount me = requireReviewer();
         NewsArticle article = findReviewable(id);
         requireStatus(article, ArticleStatus.PENDING_REVIEW);
-        NewsArticle saved = articleWorkFlowService.transition(article,ArticleStatus.ARCHIVED,me,requireNote(note));
-        return mapToDetailResponse(saved,findLatestFeedback(saved));
+        NewsArticle saved = articleWorkFlowService.transition(article, ArticleStatus.ARCHIVED, me, requireNote(note));
+        return mapToDetailResponse(saved, findLatestFeedback(saved));
     }
 
     @Override
@@ -100,14 +103,14 @@ public class ReviewServiceImpl implements ReviewService {
         requireStatus(article, ArticleStatus.PENDING_REVIEW);
         NewsArticle saved;
 
-        if (publishDate != null && publishDate.isAfter(LocalDateTime.now())) {
+        if (publishDate != null && publishDate.isAfter(LocalDateTime.now(ZoneId.systemDefault()))) {
             article.setPublishDate(publishDate);
             saved = articleWorkFlowService.transition(article, ArticleStatus.SCHEDULED, me, note);
         } else {
             article.setPublishDate(null);
             saved = articleWorkFlowService.transition(article, ArticleStatus.PUBLISHED, me, note);
         }
-        return mapToDetailResponse(saved,null);
+        return mapToDetailResponse(saved, null);
     }
 
     @Override
@@ -117,8 +120,8 @@ public class ReviewServiceImpl implements ReviewService {
         NewsArticle article = findReviewable(id);
         requireStatus(article, ArticleStatus.SCHEDULED);
         article.setPublishDate(null);
-        NewsArticle saved = articleWorkFlowService.transition(article, ArticleStatus.PUBLISHED,me,null);
-        return mapToDetailResponse(saved,null);
+        NewsArticle saved = articleWorkFlowService.transition(article, ArticleStatus.PUBLISHED, me, null);
+        return mapToDetailResponse(saved, null);
     }
 
     @Override
@@ -126,11 +129,50 @@ public class ReviewServiceImpl implements ReviewService {
     public ArticleDetailResponse archive(Long id, String note) {
         SystemAccount me = requireReviewer();
         NewsArticle article = findReviewable(id);
-        requireStatus(article, ArticleStatus.SCHEDULED,ArticleStatus.PUBLISHED);
-        NewsArticle saved = articleWorkFlowService.transition(article,ArticleStatus.ARCHIVED,me,note);
-        return mapToDetailResponse(saved,null);
+        requireStatus(article, ArticleStatus.SCHEDULED, ArticleStatus.PUBLISHED);
+        NewsArticle saved = articleWorkFlowService.transition(article, ArticleStatus.ARCHIVED, me, note);
+        return mapToDetailResponse(saved, null);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<AuditLogResponse> searchLogs(String keyword, String actor, LocalDate from, LocalDate to, Pageable pageable, ArticleStatus toStatus) {
+        requireAdmin();
+        for (Sort.Order order : pageable.getSort()) {
+            if (!LOG_SORT_FIELDS.contains(order.getProperty())) {
+                throw new InvalidRequestException("Cannot sort by '" + order.getProperty() + "'. Allowed: " + LOG_SORT_FIELDS);
+            }
+        }
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new InvalidRequestException("from must be before or equal to to");
+        }
+        LocalDateTime fromTime = from == null ? null : from.atStartOfDay();
+        LocalDateTime toTime = to == null ? null : to.plusDays(1).atStartOfDay();
+        return PageResponse.of(logRepository
+                .search(toStatus, blankToNull(actor), blankToNull(keyword), fromTime, toTime, pageable)
+                .map(l -> AuditLogResponse.builder()
+                        .id(l.getId())
+                        .articleId(l.getArticle().getId())
+                        .articleTitle(l.getArticle().getNewsTitle())
+                        .fromStatus(l.getFromStatus())
+                        .toStatus(l.getToStatus())
+                        .actorName(l.getActor() == null ? "SYSTEM" : l.getActor().getAccountName())
+                        .note(l.getNote())
+                        .actionAt(l.getActionAt())
+                        .build()));
+    }
+
+    private String blankToNull(String s) {
+        return (s == null || s.isBlank()) ? null : s.trim();
+    }
+
+    private SystemAccount requireAdmin() {
+        SystemAccount me = currentUserService.getCurrentAccount();
+        if (!currentUserService.isAdmin(me)) {
+            throw new ForbiddenException("Only ADMIN can view audit logs");
+        }
+        return me;
+    }
 
     private SystemAccount requireReviewer() {
         SystemAccount me = currentUserService.getCurrentAccount();
@@ -140,7 +182,6 @@ public class ReviewServiceImpl implements ReviewService {
         return me;
     }
 
-
     private NewsArticle findReviewable(Long id) {
         NewsArticle article = newsArticleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("News article not found with id: " + id));
@@ -149,7 +190,6 @@ public class ReviewServiceImpl implements ReviewService {
         }
         return article;
     }
-
 
     private String findLatestFeedback(NewsArticle article) {
         ArticleStatus status = article.getArticleStatus();
@@ -162,7 +202,6 @@ public class ReviewServiceImpl implements ReviewService {
                 .map(ArticleWorkflowLog::getNote)
                 .orElse(null);
     }
-
 
     private ArticleDetailResponse mapToDetailResponse(NewsArticle article, String latestFeedback) {
         ArticleDetailResponse.AuthorDto authorDto = null;

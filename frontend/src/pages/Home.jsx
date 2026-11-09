@@ -12,7 +12,6 @@ import {
   Alert,
 } from "react-bootstrap";
 import api, { getErrorMessage } from "../api/axiosClient";
-import { getUser, getRole, HOME_BY_ROLE } from "../components/Auth/auth";
 
 const PAGE_SIZE = 9;
 
@@ -24,8 +23,6 @@ export default function Home() {
   const [title, setTitle] = useState(""); // từ khóa đã bấm Search
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  const user = getUser();
 
   // Gọi API mỗi khi đổi trang hoặc đổi từ khóa
   useEffect(() => {
@@ -49,7 +46,7 @@ export default function Home() {
         setLoading(false);
       }
     };
-    load();
+    void load();
   }, [page, title]);
 
   const handleSearch = (e) => {
@@ -58,25 +55,65 @@ export default function Home() {
     setTitle(keyword.trim());
   };
 
-  return (
-    <Container className="py-4">
-      {/* Logo + nút Login / Dashboard */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <img src="/images/logo.png" alt="FU News" style={{ height: 56 }} />
-        {user ? (
-          <Button
-            as={Link}
-            to={HOME_BY_ROLE[getRole()] || "/news"}
-            variant="outline-primary"
-          >
-            Dashboard
-          </Button>
-        ) : (
-          <Button as={Link} to="/login">
-            Login
-          </Button>
-        )}
+  let contentBlock;
+  if (loading) {
+    contentBlock = (
+      <div className="text-center py-5">
+        <Spinner animation="border" />
       </div>
+    );
+  } else if (items.length === 0) {
+    contentBlock = <p className="text-center text-muted py-5">No news found.</p>;
+  } else {
+    contentBlock = (
+      <Row xs={1} md={2} lg={3} className="g-4">
+        {items.map((n) => (
+          <Col key={n.id}>
+            <Card className="h-100 shadow-sm">
+              {n.thumbnail && (
+                <Card.Img
+                  variant="top"
+                  src={n.thumbnail}
+                  style={{ height: 180, objectFit: "cover" }}
+                />
+              )}
+              <Card.Body className="d-flex flex-column">
+                {n.categoryName && (
+                  <small className="text-primary fw-semibold mb-1">
+                    {n.categoryName}
+                  </small>
+                )}
+                <Card.Title>{n.title}</Card.Title>
+                {n.headline && (
+                  <Card.Text className="text-muted">{n.headline}</Card.Text>
+                )}
+
+                <div className="mt-auto d-flex justify-content-between align-items-center">
+                  <small className="text-muted">
+                    {n.publishDate
+                      ? new Date(n.publishDate).toLocaleDateString()
+                      : ""}
+                  </small>
+                  <Button
+                    as={Link}
+                    to={`/post/${n.id}`}
+                    size="sm"
+                    variant="outline-primary"
+                  >
+                    Read more
+                  </Button>
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+        ))}
+      </Row>
+    );
+  }
+
+  return (
+    <Container className="py-2">
+      <h3 className="mb-3">Latest news</h3>
 
       {/* Ô search */}
       <Form onSubmit={handleSearch} className="mb-4">
@@ -93,56 +130,7 @@ export default function Home() {
       {error && <Alert variant="danger">{error}</Alert>}
 
       {/* Danh sách bài dạng thẻ */}
-      {loading ? (
-        <div className="text-center py-5">
-          <Spinner animation="border" />
-        </div>
-      ) : items.length === 0 ? (
-        <p className="text-center text-muted py-5">No news found.</p>
-      ) : (
-        <Row xs={1} md={2} lg={3} className="g-4">
-          {items.map((n) => (
-            <Col key={n.id}>
-              <Card className="h-100 shadow-sm">
-                {n.thumbnail && (
-                  <Card.Img
-                    variant="top"
-                    src={n.thumbnail}
-                    style={{ height: 180, objectFit: "cover" }}
-                  />
-                )}
-                <Card.Body className="d-flex flex-column">
-                  {n.categoryName && (
-                    <small className="text-primary fw-semibold mb-1">
-                      {n.categoryName}
-                    </small>
-                  )}
-                  <Card.Title>{n.title}</Card.Title>
-                  {n.headline && (
-                    <Card.Text className="text-muted">{n.headline}</Card.Text>
-                  )}
-
-                  <div className="mt-auto d-flex justify-content-between align-items-center">
-                    <small className="text-muted">
-                      {n.publishDate
-                        ? new Date(n.publishDate).toLocaleDateString()
-                        : ""}
-                    </small>
-                    <Button
-                      as={Link}
-                      to={`/news/${n.id}`}
-                      size="sm"
-                      variant="outline-primary"
-                    >
-                      Read more
-                    </Button>
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-          ))}
-        </Row>
-      )}
+      {contentBlock}
 
       {/* Phân trang */}
       {totalPages > 1 && (

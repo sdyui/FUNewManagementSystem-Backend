@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.Set;
 import static com.funewmanagementsystem.entity.ArticleStatus.*;
@@ -25,20 +26,20 @@ public class ArticleWorkFlowServiceImpl implements ArticleWorkFlowService {
             PENDING_REVIEW,    Set.of(CHANGES_REQUESTED, SCHEDULED, PUBLISHED, ARCHIVED),
             CHANGES_REQUESTED, Set.of(PENDING_REVIEW, ARCHIVED),
             SCHEDULED,         Set.of(PUBLISHED, CHANGES_REQUESTED, ARCHIVED),
-            PUBLISHED,         Set.of(ARCHIVED),
+            PUBLISHED,         Set.of(ARCHIVED,CHANGES_REQUESTED),
             ARCHIVED,          Set.of(DRAFT));
 
     private final NewsArticleRepository newsArticleRepository;
     private final ArticleWorkflowLogRepository articleWorkflowLogRepository;
-        @Transactional
-        @Override
-        public NewsArticle transition(NewsArticle newsArticle, ArticleStatus articleStatus, SystemAccount systemAccount, String note) {
+    @Transactional
+    @Override
+    public NewsArticle transition(NewsArticle newsArticle, ArticleStatus articleStatus, SystemAccount systemAccount, String note) {
         ArticleStatus from = newsArticle.getArticleStatus();
         boolean allowed = (from == null)? articleStatus == DRAFT : ALLOWED.getOrDefault(from, Set.of()).contains(articleStatus);
         if(!allowed) {
             throw new InvalidRequestException("Can not change article status from "+from+" to "+articleStatus);
         }
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.systemDefault());
         newsArticle.setArticleStatus(articleStatus);
         newsArticle.setNewsStatus(articleStatus == PUBLISHED);
         if( from != null ){

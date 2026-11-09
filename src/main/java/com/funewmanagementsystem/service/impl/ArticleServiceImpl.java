@@ -148,17 +148,14 @@ public class ArticleServiceImpl implements ArticleService {
 
         Optional<NewsArticle> articleOpt = newsArticleRepository.findById(id);
         if (articleOpt.isEmpty()) {
-            throw new ResourceNotFoundException("Không tìm thấy bài viết với id: " + id);
+            throw new ResourceNotFoundException("News article not found with id: " + id);
         }
         NewsArticle article = articleOpt.get();
 
-        boolean isAuthor = article.getCreatedBy().getId().equals(currentAuthor.getId());
-        boolean isStaffOrAdmin = currentAuthor.getAccountRole() == AccountRole.ADMIN
-                || currentAuthor.getAccountRole() == AccountRole.EDITOR
-                || currentAuthor.getAccountRole() == AccountRole.STAFF;
-
-        if (!isAuthor && !isStaffOrAdmin) {
-            throw new ForbiddenException("Bạn chỉ có quyền xem chi tiết bài viết của chính mình!");
+        // Chỉ tác giả xem được bài của mình qua API này (editor dùng /review/{id}, khách dùng /public/news/{id}).
+        // Không phải bài của mình -> 404 để không lộ ra là bài có tồn tại
+        if (!article.getCreatedBy().getId().equals(currentAuthor.getId())) {
+            throw new ResourceNotFoundException("News article not found with id: " + id);
         }
 
         return mapToDetailResponse(article);

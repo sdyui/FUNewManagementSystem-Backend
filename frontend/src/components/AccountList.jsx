@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Container, Table, Button, Form, InputGroup, Alert } from "react-bootstrap";
 import api, { getErrorMessage } from "../api/axiosClient";
 import EditEmail from "./EditEmail";
@@ -47,97 +47,80 @@ export default function ManageAccount() {
         item.accountRole?.toLowerCase().includes(keyword),
     );
   }
-  useEffect(() => {
-    async function fetchAccounts() {
-      try {
-        const response = await api.get("account");
-        // console.log("Fetched accounts:", response.data);
-        setAccounts(response.data.content ?? []);
-      } catch (error) {
-        console.error("Error fetching accounts:", error);
-      }
-    }
-    void fetchAccounts();
-  }, []);
 
-  const handleEmailSaved = (updated) => {
-    setAccounts((prev) =>
-      prev.map((a) =>
-        a.accountId === updated.accountId ? { ...a, email: updated.email } : a,
-      ),
-    );
-  };
   return (
     <Container className="mt-4">
-      {/* Header */}
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
-        <h2 className="mb-0">Manage Accounts</h2>
-
-        <div className="d-flex gap-2">
-          {/* Search */}
-          <InputGroup style={{ maxWidth: "400px" }}>
-            <Form.Control
-              placeholder="Tìm kiếm tài khoản..."
-              aria-label="Tìm kiếm tài khoản"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-
-            <Button variant="primary">Search</Button>
-          </InputGroup>
-
-        
-        </div>
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h2 className="mb-0">Account Management</h2>
+        <EditEmail
+          editing={editing}
+          onSuccess={() => {
+            setEditing(null);
+            setMessage("Account updated successfully.");
+          }}
+          onClose={() => setEditing(null)}
+        />
       </div>
 
       {message && (
-        <Alert variant="success" dismissible onClose={() => setMessage("")}>
+        <Alert variant="success" onClose={() => setMessage("")} dismissible>
           {message}
         </Alert>
       )}
       {error && (
-        <Alert variant="danger" dismissible onClose={() => setError("")}>
+        <Alert variant="danger" onClose={() => setError("")} dismissible>
           {error}
         </Alert>
       )}
 
-      {/* Account Table */}
+      {/* Search Bar */}
+      <InputGroup className="mb-3">
+        <Form.Control
+          type="text"
+          placeholder="Search by name, email, role..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        {searchTerm && (
+          <Button variant="outline-secondary" onClick={() => setSearchTerm("")}>
+            Clear
+          </Button>
+        )}
+      </InputGroup>
+
+      {/* Accounts Table */}
       <Table striped bordered hover responsive>
-        <thead className="table-dark">
+        <thead>
           <tr>
             <th>#</th>
-            <th>Account ID</th>
-            <th>Account Name</th>
+            <th>ID</th>
+            <th>Name</th>
             <th>Email</th>
             <th>Role</th>
-            <th>Action</th>
+            <th>Actions</th>
           </tr>
         </thead>
-
         <tbody>
           {accountList.length > 0 ? (
-            accountList.map((item, index) => (
-              <tr key={item.accountId}>
-                <td>{index + 1}</td>
-
-                <td>{item.accountId}</td>
-
-                <td>
-                  <strong>{item.accountName}</strong>
-                </td>
-
-                <td>{item.email}</td>
-
-                <td style={{ minWidth: 140 }}>
-                  {item.accountId === myId ? (
-                    <span title="You cannot change your own role">
-                      {item.accountRole} <small className="text-muted">(you)</small>
-                    </span>
-                  ) : (
+            accountList.map((item, index) => {
+              const isMe = item.accountId === myId;
+              return (
+                <tr key={item.accountId}>
+                  <td>{index + 1}</td>
+                  <td>{item.accountId}</td>
+                  <td>
+                    <strong>{item.accountName}</strong>
+                    {isMe && <span className="badge bg-secondary ms-2">You</span>}
+                  </td>
+                  <td>{item.accountEmail}</td>
+                  <td>
+                    {/* Role dropdown: không cho tự đổi role của chính mình */}
                     <Form.Select
                       size="sm"
                       value={item.accountRole}
+                      disabled={isMe}
                       onChange={(e) => void handleRoleChange(item, e.target.value)}
+                      style={{ width: "150px", display: "inline-block" }}
                     >
                       {ROLES.map((r) => (
                         <option key={r} value={r}>
@@ -145,42 +128,29 @@ export default function ManageAccount() {
                         </option>
                       ))}
                     </Form.Select>
-                  )}
-                </td>
-
-                <td>
-                  <div className="d-flex gap-2">
+                  </td>
+                  <td>
                     <Button
                       variant="warning"
                       size="sm"
-                      className="flex-fill"
+                      className="me-2"
                       onClick={() => setEditing(item)}
                     >
                       Edit
                     </Button>
-
-                    
-                  </div>
-                </td>
-              </tr>
-            ))
+                  </td>
+                </tr>
+              );
+            })
           ) : (
             <tr>
               <td colSpan="6" className="text-center">
-                Không tìm thấy tài khoản nào.
+                No accounts found.
               </td>
             </tr>
           )}
         </tbody>
       </Table>
-
-      <EditEmail
-        key={editing?.accountId ?? "none"}
-        show={editing !== null}
-        account={editing}
-        onClose={() => setEditing(null)}
-        onSaved={handleEmailSaved}
-      />
     </Container>
   );
 }

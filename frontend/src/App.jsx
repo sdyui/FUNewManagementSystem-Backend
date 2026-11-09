@@ -27,9 +27,10 @@ function App() {
       <Route path="login" element={<Login />} />
       <Route path="register" element={<Register />} />
 
-      {/* Authenticated user routes */}
+      {/* login user */}
       <Route element={<ProtectedRoute />}>
-        <Route element={<Layout />}>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Home />} />
           <Route path="about" element={<About />} />
           <Route path="contact" element={<Contact />} />
           <Route path="news" element={<NewsList />} />
